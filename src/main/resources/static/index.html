@@ -3,2025 +3,762 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>MF Social Monitor</title>
+    <title>Social Sentiment Monitor</title>
     <style>
         :root {
-            color-scheme: light;
-            --ink: #172033;
-            --muted: #667085;
-            --line: #e6eaf0;
-            --surface: #ffffff;
-            --canvas: #f5f7fb;
-            --brand: #2856d7;
-            --brand-dark: #1d43ae;
-            --positive: #16875a;
-            --neutral: #64748b;
-            --warning: #b66a00;
-            --critical: #c9363e;
-            --shadow: 0 12px 32px rgba(24, 39, 75, 0.08);
+            --bg: #f5f7fb;
+            --panel: #ffffff;
+            --panel-soft: #f8fafc;
+            --text: #172033;
+            --muted: #697386;
+            --line: #e5e9f0;
+            --brand: #315efb;
+            --brand-soft: #eef2ff;
+            --positive: #18864b;
+            --neutral: #697386;
+            --warning: #b56b00;
+            --critical: #c53030;
+            --shadow: 0 10px 28px rgba(28, 39, 60, .08);
         }
 
         * { box-sizing: border-box; }
-
         body {
             margin: 0;
-            min-width: 320px;
-            background: var(--canvas);
-            color: var(--ink);
+            background: var(--bg);
+            color: var(--text);
             font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         }
-
         button, input { font: inherit; }
-
-        .topbar {
-            height: 68px;
-            background: var(--surface);
-            border-bottom: 1px solid var(--line);
+        button { cursor: pointer; }
+        .shell { max-width: 1440px; margin: 0 auto; padding: 26px; }
+        .header {
             display: flex;
-            align-items: center;
-        }
-
-        .topbar-inner, main {
-            width: min(1180px, calc(100% - 40px));
-            margin: 0 auto;
-        }
-
-        .topbar-inner {
-            display: flex;
-            align-items: center;
+            gap: 18px;
             justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
         }
-
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 11px;
-            font-weight: 750;
-            letter-spacing: -0.02em;
-        }
-
-        .brand-mark {
-            width: 36px;
-            height: 36px;
-            border-radius: 11px;
-            display: grid;
-            place-items: center;
-            color: white;
-            background: linear-gradient(145deg, #3768ee, #1f48bd);
-            box-shadow: 0 8px 18px rgba(40, 86, 215, 0.22);
-            font-size: 13px;
-        }
-
+        .title h1 { margin: 0; font-size: 28px; letter-spacing: -.03em; }
+        .title p { margin: 6px 0 0; color: var(--muted); font-size: 14px; }
         .connection {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: var(--muted);
-            font-size: 13px;
-        }
-
-        .dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #98a2b3;
-        }
-
-        .dot.ready { background: var(--positive); }
-        .dot.error { background: var(--critical); }
-
-        main { padding: 44px 0 64px; }
-
-        .platform-switcher {
-            display: inline-flex;
-            background: #e8ecf4;
-            border-radius: 12px;
-            padding: 4px;
-            gap: 4px;
-            margin-bottom: 20px;
-        }
-
-        .platform-btn {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            border: 0;
-            padding: 8px 18px;
-            border-radius: 9px;
-            font-size: 13px;
-            font-weight: 750;
+            padding: 8px 11px;
+            border-radius: 999px;
+            border: 1px solid var(--line);
+            background: var(--panel);
             color: var(--muted);
-            background: transparent;
-            cursor: pointer;
-            transition: all 180ms ease;
-        }
-
-        .platform-btn:hover {
-            color: var(--ink);
-        }
-
-        .platform-btn.active {
-            background: white;
-            box-shadow: 0 2px 8px rgba(20, 30, 60, 0.08);
-        }
-
-        .platform-btn[data-platform="facebook"].active {
-            color: var(--brand);
-        }
-
-        .platform-btn[data-platform="instagram"].active {
-            color: #d62976;
-        }
-
-        .platform-btn svg {
-            flex-shrink: 0;
-        }
-
-        .hero {
-            display: flex;
-            align-items: flex-end;
-            justify-content: space-between;
-            gap: 28px;
-            margin-bottom: 28px;
-        }
-
-        .eyebrow {
-            margin: 0 0 9px;
-            color: var(--brand);
             font-size: 12px;
-            font-weight: 800;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
+            white-space: nowrap;
         }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: #a0a8b8; }
+        .connection.ready .dot { background: #25a75a; }
+        .connection.error .dot { background: #d14343; }
 
-        h1 {
-            margin: 0;
-            font-size: clamp(30px, 4vw, 43px);
-            line-height: 1.08;
-            letter-spacing: -0.04em;
-        }
-
-        .hero-copy {
-            margin: 13px 0 0;
-            max-width: 650px;
-            color: var(--muted);
-            font-size: 15px;
-            line-height: 1.65;
-        }
-
-        .sync-button {
-            flex: 0 0 auto;
-            min-width: 154px;
-            height: 48px;
-            border: 0;
-            border-radius: 12px;
-            color: white;
-            background: var(--brand);
-            box-shadow: 0 9px 22px rgba(40, 86, 215, 0.24);
-            cursor: pointer;
-            font-weight: 750;
-            transition: transform 160ms ease, background 160ms ease;
-        }
-
-        .sync-button:hover:not(:disabled) {
-            background: var(--brand-dark);
-            transform: translateY(-1px);
-        }
-
-        .sync-button:disabled {
-            cursor: wait;
-            opacity: 0.75;
-        }
-
-        .sync-button.loading::before {
-            content: "";
-            display: inline-block;
-            width: 13px;
-            height: 13px;
-            margin-right: 9px;
-            border: 2px solid rgba(255, 255, 255, 0.4);
-            border-top-color: white;
-            border-radius: 50%;
-            vertical-align: -2px;
-            animation: spin 800ms linear infinite;
-        }
-
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        .notice {
-            display: none;
-            margin-bottom: 22px;
-            padding: 14px 16px;
-            border: 1px solid #f2b8bc;
-            border-radius: 12px;
-            background: #fff4f4;
-            color: #9f252d;
-            font-size: 14px;
-            line-height: 1.5;
-        }
-
-        .notice.visible { display: block; }
-
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
-            gap: 16px;
-            margin-bottom: 20px;
-        }
-
-        .card {
-            background: var(--surface);
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+            padding: 14px;
+            background: var(--panel);
             border: 1px solid var(--line);
             border-radius: 16px;
             box-shadow: var(--shadow);
+            margin-bottom: 16px;
         }
-
-        .stat { padding: 21px 22px; }
-
-        .stat-label {
-            display: block;
-            margin-bottom: 10px;
-            color: var(--muted);
-            font-size: 12px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-        }
-
-        .stat-value {
-            font-size: 29px;
-            font-weight: 780;
-            letter-spacing: -0.035em;
-        }
-
-        .stat-detail {
-            display: block;
-            margin-top: 7px;
-            color: var(--muted);
-            font-size: 12px;
-        }
-
-        .overview {
-            display: grid;
-            grid-template-columns: 1.45fr 1fr;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        .overview-card { padding: 23px; }
-
-        .section-head {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 16px;
-            margin-bottom: 20px;
-        }
-
-        h2 {
-            margin: 0;
-            font-size: 17px;
-            letter-spacing: -0.02em;
-        }
-
-        .section-meta {
-            color: var(--muted);
-            font-size: 12px;
-        }
-
-        .distribution {
-            height: 13px;
-            border-radius: 999px;
-            overflow: hidden;
-            display: flex;
-            background: #edf0f5;
-        }
-
-        .distribution span { min-width: 0; transition: width 300ms ease; }
-        .bar-positive { background: var(--positive); }
-        .bar-neutral { background: var(--neutral); }
-        .bar-warning { background: #e59a2d; }
-        .bar-critical { background: var(--critical); }
-
-        .legend {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 14px;
-            margin-top: 19px;
-        }
-
-        .legend-item {
-            color: var(--muted);
-            font-size: 12px;
-        }
-
-        .legend-item strong {
-            display: block;
-            margin-top: 4px;
-            color: var(--ink);
-            font-size: 17px;
-        }
-
-        .legend-dot {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            margin-right: 6px;
-            border-radius: 50%;
-        }
-
-        .sync-details {
-            display: grid;
-            gap: 15px;
-        }
-
-        .detail-row {
-            display: flex;
-            justify-content: space-between;
-            gap: 16px;
-            font-size: 13px;
-        }
-
-        .detail-row span:first-child { color: var(--muted); }
-        .detail-row span:last-child { font-weight: 700; text-align: right; }
-
-        .results-card { overflow: hidden; }
-
-        .tabs {
-            display: flex;
-            gap: 8px;
-            margin: 4px 0 16px;
-            padding: 6px;
-            border: 1px solid var(--line);
-            border-radius: 13px;
-            background: var(--surface);
-            box-shadow: var(--shadow);
-        }
-
-        .tab-button {
-            padding: 10px 15px;
+        .platform-switch { display: flex; gap: 6px; background: var(--panel-soft); padding: 5px; border-radius: 12px; }
+        .platform-button {
             border: 0;
-            border-radius: 9px;
-            color: var(--muted);
             background: transparent;
-            cursor: pointer;
+            color: var(--muted);
+            padding: 9px 14px;
+            border-radius: 9px;
+            font-weight: 700;
             font-size: 13px;
-            font-weight: 750;
         }
-
-        .tab-button.active {
-            color: var(--brand);
-            background: #eef3ff;
-        }
-
-        [hidden] { display: none !important; }
-        .tab-panel[hidden] { display: none; }
-
-        .reactions-card {
-            margin-bottom: 20px;
-            overflow: hidden;
-        }
-
-        .reaction-summary {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 10px;
-            padding: 18px 22px;
-            border-bottom: 1px solid var(--line);
-        }
-
-        .reaction-summary.ig-mode {
-            grid-template-columns: minmax(160px, 220px) !important;
-        }
-
-        .reaction-item {
-            padding: 11px 8px;
+        .platform-button.active { color: var(--text); background: var(--panel); box-shadow: 0 2px 7px rgba(25,35,55,.09); }
+        .x-target { display: none; align-items: center; gap: 7px; flex: 1 1 310px; }
+        .x-target.visible { display: flex; }
+        .x-target span { color: var(--muted); font-size: 13px; font-weight: 700; }
+        .x-target input {
+            width: 100%;
+            min-width: 180px;
+            border: 1px solid var(--line);
             border-radius: 10px;
-            background: #f7f9fc;
-            color: var(--muted);
-            text-align: center;
-            font-size: 11px;
-            font-weight: 700;
-        }
-
-        .reaction-item strong {
-            display: block;
-            margin-top: 4px;
-            color: var(--ink);
-            font-size: 18px;
-        }
-
-        .reaction-post {
-            max-width: 390px;
-            line-height: 1.45;
-        }
-
-        .reaction-number {
-            font-variant-numeric: tabular-nums;
-            text-align: center;
-        }
-
-        .reaction-note {
-            margin: 0;
-            padding: 10px 22px;
-            border-bottom: 1px solid var(--line);
-            color: var(--muted);
-            background: #fbfcff;
-            font-size: 11px;
-            line-height: 1.5;
-        }
-
-        .comment-reaction-total {
-            display: block;
-            color: var(--ink);
-            font-size: 15px;
-            font-variant-numeric: tabular-nums;
-        }
-
-        .comment-reaction-breakdown {
-            display: block;
-            min-width: 130px;
-            margin-top: 4px;
-            color: var(--muted);
-            font-size: 10px;
-            line-height: 1.45;
-        }
-
-        .review-text {
-            max-width: 520px;
-            line-height: 1.5;
-            font-weight: 600;
-        }
-
-        .results-header {
-            padding: 20px 22px;
-            border-bottom: 1px solid var(--line);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .filters { display: flex; gap: 7px; flex-wrap: wrap; }
-
-        .filter {
-            padding: 7px 11px;
-            border: 1px solid var(--line);
-            border-radius: 8px;
-            color: var(--muted);
-            background: white;
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: 700;
-        }
-
-        .filter.active {
-            border-color: #cbd7fa;
-            color: var(--brand);
-            background: #f1f5ff;
-        }
-
-        .table-wrap { overflow-x: auto; }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            min-width: 760px;
-        }
-
-        th {
-            padding: 12px 18px;
-            color: var(--muted);
-            background: #fafbfc;
-            border-bottom: 1px solid var(--line);
-            text-align: left;
-            font-size: 11px;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-        }
-
-        td {
-            padding: 16px 18px;
-            border-bottom: 1px solid var(--line);
-            vertical-align: top;
-            font-size: 13px;
-        }
-
-        tbody tr:last-child td { border-bottom: 0; }
-
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 5px 8px;
-            border-radius: 999px;
-            font-size: 10px;
-            font-weight: 800;
-            white-space: nowrap;
-        }
-
-        .badge-positive { color: #0d7049; background: #e8f7f0; }
-        .badge-neutral { color: #526074; background: #eef1f5; }
-        .badge-warning { color: #955600; background: #fff4dc; }
-        .badge-critical { color: #a72931; background: #ffeaec; }
-
-        .comment-text {
-            max-width: 500px;
-            line-height: 1.5;
-            font-weight: 600;
-        }
-
-        .post-context {
-            max-width: 360px;
-            margin-top: 5px;
-            color: var(--muted);
-            font-size: 11px;
-            line-height: 1.45;
-        }
-
-        .score { font-variant-numeric: tabular-nums; font-weight: 750; }
-        .time { color: var(--muted); white-space: nowrap; }
-
-        .empty {
-            padding: 58px 22px;
-            color: var(--muted);
-            text-align: center;
-        }
-
-        .empty strong {
-            display: block;
-            margin-bottom: 7px;
-            color: var(--ink);
-            font-size: 15px;
-        }
-
-        @media (max-width: 900px) {
-            .stats { grid-template-columns: repeat(2, 1fr); }
-            .overview { grid-template-columns: 1fr; }
-            .reaction-summary { grid-template-columns: repeat(4, 1fr); }
-        }
-
-        @media (max-width: 640px) {
-            .topbar-inner, main { width: min(100% - 24px, 1180px); }
-            main { padding-top: 28px; }
-            .hero { align-items: stretch; flex-direction: column; }
-            .sync-button { width: 100%; }
-            .stats { grid-template-columns: 1fr 1fr; gap: 10px; }
-            .stat { padding: 17px; }
-            .legend { grid-template-columns: repeat(2, 1fr); }
-            .results-header { align-items: flex-start; flex-direction: column; }
-            .connection-text { display: none; }
-        }
-        .messages-layout {
-            display: grid;
-            grid-template-columns: 340px 1fr;
-            height: 600px;
-            border-top: 1px solid var(--line);
-        }
-
-        .threads-pane {
-            border-right: 1px solid var(--line);
-            display: flex;
-            flex-direction: column;
-            background: #fafbfe;
-            overflow: hidden;
-        }
-
-        .thread-search-box {
-            padding: 12px 14px;
-            border-bottom: 1px solid var(--line);
-        }
-
-        .thread-search-box input {
-            width: 100%;
-            padding: 8px 12px;
-            border: 1px solid var(--line);
-            border-radius: 8px;
-            font-size: 13px;
+            padding: 9px 11px;
             outline: none;
-            background: var(--surface);
-        }
-
-        .thread-search-box input:focus {
-            border-color: var(--brand);
-        }
-
-        .threads-list {
-            overflow-y: auto;
-            flex: 1;
-        }
-
-        .thread-item {
-            padding: 14px 16px;
-            border-bottom: 1px solid var(--line);
-            cursor: pointer;
-            transition: background 150ms ease;
-        }
-
-        .thread-item:hover {
-            background: #edf2fc;
-        }
-
-        .thread-item.active {
-            background: #e7effc;
-            border-left: 4px solid var(--brand);
-        }
-
-        .thread-item-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 5px;
-        }
-
-        .thread-participant {
-            font-weight: 750;
-            font-size: 13px;
-            color: var(--ink);
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .thread-snippet {
-            font-size: 12px;
-            color: var(--muted);
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            line-height: 1.4;
-        }
-
-        .conversation-pane {
-            display: flex;
-            flex-direction: column;
-            background: var(--surface);
-            height: 100%;
-            overflow: hidden;
-        }
-
-        .conversation-header {
-            padding: 14px 20px;
-            border-bottom: 1px solid var(--line);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
             background: #fff;
         }
-
-        .message-stream {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-        }
-
-        .msg-bubble-wrap {
-            display: flex;
-            flex-direction: column;
-            max-width: 75%;
-        }
-
-        .msg-bubble-wrap.customer {
-            align-self: flex-start;
-        }
-
-        .msg-bubble-wrap.page {
-            align-self: flex-end;
-        }
-
-        .msg-bubble {
-            padding: 11px 15px;
-            border-radius: 14px;
-            font-size: 13px;
-            line-height: 1.45;
-            word-break: break-word;
-        }
-
-        .msg-bubble-wrap.customer .msg-bubble {
-            background: #f0f3f8;
-            color: var(--ink);
-            border-bottom-left-radius: 3px;
-        }
-
-        .msg-bubble-wrap.page .msg-bubble {
+        .x-target input:focus { border-color: #9eb1ff; box-shadow: 0 0 0 3px var(--brand-soft); }
+        .sync-button {
+            margin-left: auto;
+            border: 0;
             background: var(--brand);
-            color: #ffffff;
-            border-bottom-right-radius: 3px;
-        }
-
-        .msg-meta {
-            margin-top: 4px;
-            font-size: 11px;
-            color: var(--muted);
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .msg-bubble-wrap.page .msg-meta {
-            justify-content: flex-end;
-        }
-
-        @media (max-width: 768px) {
-            .messages-layout {
-                grid-template-columns: 1fr;
-                height: auto;
-            }
-            .threads-pane {
-                max-height: 240px;
-            }
-            .message-stream {
-                min-height: 320px;
-            }
-        }
-        .comment-author {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 6px;
-            font-size: 12px;
-            color: var(--ink);
-        }
-
-        .comment-author.small {
-            gap: 6px;
-            margin-bottom: 0;
-            display: inline-flex;
-            vertical-align: middle;
-        }
-
-        .author-avatar,
-        .author-fallback {
-            width: 32px;
-            height: 32px;
-            flex: 0 0 32px;
-            border-radius: 50%;
-        }
-
-        .author-avatar.small,
-        .author-fallback.small {
-            width: 22px;
-            height: 22px;
-            flex: 0 0 22px;
-            font-size: 10px;
-        }
-
-        .author-avatar {
-            object-fit: cover;
-            border: 1px solid var(--line);
-        }
-
-        .author-fallback {
-            display: grid;
-            place-items: center;
-            color: #2558a8;
-            background: #e8f0ff;
-            font-size: 12px;
+            color: #fff;
+            border-radius: 10px;
+            padding: 10px 16px;
             font-weight: 800;
         }
+        .sync-button:disabled { opacity: .55; cursor: wait; }
 
-        .author-name {
-            font-weight: 700;
-            line-height: 1.2;
+        .notice {
+            display: none;
+            margin-bottom: 16px;
+            padding: 12px 14px;
+            border: 1px solid #f0c5c5;
+            background: #fff6f6;
+            color: #8b2525;
+            border-radius: 12px;
+            font-size: 13px;
+            white-space: pre-wrap;
         }
+        .notice.show { display: block; }
+        .warnings { display: none; margin-bottom: 16px; padding: 12px 14px; border: 1px solid #f0d8a5; background: #fffaf0; border-radius: 12px; }
+        .warnings.show { display: block; }
+        .warnings strong { display: block; font-size: 13px; margin-bottom: 5px; }
+        .warnings ul { margin: 0; padding-left: 20px; color: #755313; font-size: 12px; line-height: 1.5; }
 
-        .author-id {
-            margin-top: 2px;
-            color: var(--muted);
-            font-size: 10px;
-            overflow-wrap: anywhere;
-        }
-        .nested-replies-wrap {
-            margin-top: 10px;
-            padding-left: 12px;
-            border-left: 2px solid #e2e8f0;
-        }
-        .nested-replies-toggle {
-            font-size: 11px;
-            font-weight: 700;
-            color: #4f46e5;
-            margin-bottom: 6px;
-        }
-        .nested-replies-list {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-        .nested-reply-card {
-            background: #f8fafc;
+        .profile-card {
+            display: none;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 16px;
             border: 1px solid var(--line);
-            border-radius: 8px;
-            padding: 8px 12px;
+            background: var(--panel);
+            border-radius: 14px;
+            margin-bottom: 16px;
         }
-        .reply-meta {
-            display: flex;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 8px;
-            font-size: 11px;
-            margin-bottom: 4px;
+        .profile-card.show { display: flex; }
+        .profile-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background: #eef1f6; }
+        .profile-fallback { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; background: #111; color: #fff; font-weight: 900; }
+        .profile-main { min-width: 0; }
+        .profile-name { font-size: 15px; font-weight: 850; }
+        .profile-handle { color: var(--muted); font-size: 12px; margin-top: 2px; }
+        .profile-bio { color: #4f5b70; font-size: 12px; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 650px; }
+        .profile-metrics { margin-left: auto; display: flex; gap: 22px; color: var(--muted); font-size: 11px; }
+        .profile-metrics strong { display: block; color: var(--text); font-size: 15px; }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
         }
-        .reply-text {
-            font-size: 12px;
-            color: var(--ink);
-            line-height: 1.45;
+        .metric {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 15px;
+            min-height: 94px;
         }
-        .reactor-chips {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 4px;
-            margin-top: 5px;
+        .metric-label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; font-weight: 800; }
+        .metric-value { font-size: 27px; font-weight: 900; margin-top: 7px; letter-spacing: -.03em; }
+        .metric-detail { color: var(--muted); font-size: 11px; margin-top: 2px; }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
         }
-        .reactor-chip {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 10px;
-            font-weight: 600;
-            padding: 2px 7px;
-            background: #f1f5f9;
-            border: 1px solid #cbd5e1;
-            border-radius: 999px;
-            color: #334155;
-        }
-        .post-reactors-details {
-            margin-top: 6px;
-            font-size: 11px;
-            color: #4f46e5;
-            cursor: pointer;
-        }
-        .post-reactors-details summary {
-            font-weight: 600;
-            outline: none;
-        }
-        .reviewer-cell {
+        .tabs { display: flex; gap: 3px; padding: 9px 10px 0; border-bottom: 1px solid var(--line); overflow-x: auto; }
+        .tab-button {
+            border: 0;
+            background: transparent;
+            color: var(--muted);
+            padding: 10px 14px;
+            border-bottom: 2px solid transparent;
+            font-weight: 800;
             font-size: 12px;
             white-space: nowrap;
+        }
+        .tab-button.active { color: var(--brand); border-color: var(--brand); }
+        .tab-button[hidden] { display: none; }
+        .tab-panel { padding: 15px; }
+        .tab-panel[hidden] { display: none; }
+        .panel-head { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-bottom: 12px; }
+        .panel-head h2 { margin: 0; font-size: 16px; }
+        .meta { color: var(--muted); font-size: 12px; }
+        .filters { display: flex; gap: 5px; flex-wrap: wrap; }
+        .filter {
+            border: 1px solid var(--line);
+            background: #fff;
+            border-radius: 8px;
+            padding: 6px 9px;
+            color: var(--muted);
+            font-size: 11px;
+            font-weight: 750;
+        }
+        .filter.active { border-color: #b5c2fa; background: var(--brand-soft); color: var(--brand); }
+
+        .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
+        table { width: 100%; border-collapse: collapse; min-width: 850px; }
+        th { text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding: 10px 12px; background: var(--panel-soft); border-bottom: 1px solid var(--line); }
+        td { padding: 12px; vertical-align: top; border-bottom: 1px solid var(--line); font-size: 12px; }
+        tr:last-child td { border-bottom: 0; }
+        .badge { display: inline-flex; padding: 4px 7px; border-radius: 999px; font-size: 10px; font-weight: 850; white-space: nowrap; }
+        .badge-positive { color: var(--positive); background: #eaf8f0; }
+        .badge-neutral { color: var(--neutral); background: #f0f2f5; }
+        .badge-warning { color: var(--warning); background: #fff4dc; }
+        .badge-critical { color: var(--critical); background: #ffeded; }
+        .author { display: flex; align-items: center; gap: 8px; min-width: 145px; }
+        .avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; background: #edf0f4; flex: 0 0 auto; }
+        .avatar-fallback { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: #edf0f4; font-weight: 850; flex: 0 0 auto; }
+        .author-name { font-weight: 800; line-height: 1.2; }
+        .author-sub { color: var(--muted); font-size: 10px; margin-top: 2px; }
+        .comment-text { max-width: 640px; line-height: 1.45; white-space: pre-wrap; }
+        .context { color: var(--muted); font-size: 10px; margin-top: 5px; }
+        .nested { margin-top: 9px; padding-left: 10px; border-left: 2px solid var(--line); }
+        .nested-item { padding: 7px 0; }
+        .nested-item + .nested-item { border-top: 1px dashed var(--line); }
+        .chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
+        .chip { border: 1px solid var(--line); background: var(--panel-soft); border-radius: 999px; padding: 4px 7px; font-size: 10px; }
+        details summary { cursor: pointer; color: var(--brand); font-size: 11px; font-weight: 750; }
+        .engagement-post { min-width: 330px; max-width: 620px; }
+        .engagement-post a { color: var(--brand); text-decoration: none; margin-left: 5px; white-space: nowrap; }
+        .engagement-number { font-weight: 850; font-size: 13px; }
+        .empty { text-align: center; padding: 48px 16px; color: var(--muted); }
+        .empty strong { display: block; color: var(--text); margin-bottom: 5px; }
+
+        .message-layout { display: grid; grid-template-columns: 310px minmax(0,1fr); gap: 12px; min-height: 420px; }
+        .thread-list { border: 1px solid var(--line); border-radius: 12px; overflow: auto; max-height: 520px; }
+        .thread { padding: 11px; border-bottom: 1px solid var(--line); cursor: pointer; }
+        .thread:last-child { border-bottom: 0; }
+        .thread.active { background: var(--brand-soft); }
+        .thread-name { font-weight: 850; font-size: 12px; }
+        .thread-snippet { color: var(--muted); font-size: 11px; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .chat { border: 1px solid var(--line); border-radius: 12px; padding: 12px; overflow: auto; max-height: 520px; }
+        .bubble { max-width: 78%; padding: 9px 11px; background: var(--panel-soft); border-radius: 11px; margin-bottom: 8px; font-size: 12px; line-height: 1.4; }
+        .bubble.own { margin-left: auto; background: var(--brand-soft); }
+        .bubble-meta { color: var(--muted); font-size: 9px; margin-top: 4px; }
+
+        @media (max-width: 1050px) { .metrics { grid-template-columns: repeat(3, minmax(0,1fr)); } }
+        @media (max-width: 760px) {
+            .shell { padding: 14px; }
+            .header { flex-direction: column; }
+            .toolbar { align-items: stretch; }
+            .platform-switch { width: 100%; }
+            .platform-button { flex: 1; }
+            .sync-button { margin-left: 0; width: 100%; }
+            .metrics { grid-template-columns: repeat(2, minmax(0,1fr)); }
+            .profile-card { align-items: flex-start; }
+            .profile-metrics { display: none; }
+            .message-layout { grid-template-columns: 1fr; }
+            .panel-head { align-items: flex-start; flex-direction: column; }
         }
     </style>
 </head>
 <body>
-<header class="topbar">
-    <div class="topbar-inner">
-        <div class="brand"><span class="brand-mark">MF</span><span>Social Monitor</span></div>
-        <div class="connection">
-            <span id="connectionDot" class="dot"></span>
-            <span id="connectionText" class="connection-text">Waiting for first sync</span>
+<div class="shell">
+    <header class="header">
+        <div class="title">
+            <h1>Social Sentiment Monitor</h1>
+            <p>Facebook, Instagram and X engagement collection with local VADER sentiment analysis.</p>
         </div>
-    </div>
-</header>
+        <div class="connection" id="connection"><span class="dot"></span><span id="connectionText">Ready</span></div>
+    </header>
 
-<main>
-    <div class="platform-switcher" role="tablist" aria-label="Platform selection">
-        <button id="platformFb" class="platform-btn active" type="button" data-platform="facebook">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-            Facebook
-        </button>
-        <button id="platformIg" class="platform-btn" type="button" data-platform="instagram">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-            Instagram
-        </button>
-    </div>
-
-    <section class="hero">
-        <div>
-            <p id="heroEyebrow" class="eyebrow">Facebook Page</p>
-            <h1>Customer sentiment</h1>
-            <p id="heroCopy" class="hero-copy">Fetch the latest Page comments and reactions, then analyze customer sentiment in one step.</p>
+    <section class="toolbar">
+        <div class="platform-switch" aria-label="Platform">
+            <button class="platform-button active" data-platform="facebook">Facebook</button>
+            <button class="platform-button" data-platform="instagram">Instagram</button>
+            <button class="platform-button" data-platform="x">X</button>
         </div>
-        <button id="syncButton" class="sync-button" type="button">Sync now</button>
+        <label class="x-target" id="xTarget">
+            <span>@</span>
+            <input id="xUsername" type="text" autocomplete="off" placeholder="username to inspect">
+        </label>
+        <button class="sync-button" id="syncButton">Sync now</button>
     </section>
 
-    <div id="notice" class="notice" role="alert"></div>
+    <div class="notice" id="notice"></div>
+    <div class="warnings" id="warnings"><strong>Partial X data</strong><ul id="warningList"></ul></div>
 
-    <section class="stats" aria-label="Sync statistics">
-        <article class="card stat">
-            <span id="postsLabel" class="stat-label">Posts fetched</span>
-            <span id="postsValue" class="stat-value">—</span>
-            <span class="stat-detail">Latest API response</span>
-        </article>
-        <article class="card stat">
-            <span class="stat-label">Comments analyzed</span>
-            <span id="commentsValue" class="stat-value">—</span>
-            <span class="stat-detail">VADER analysis</span>
-        </article>
-        <article class="card stat">
-            <span class="stat-label">Negative feedback</span>
-            <span id="negativeValue" class="stat-value">—</span>
-            <span id="negativeDetail" class="stat-detail">Configured threshold</span>
-        </article>
-        <article class="card stat" id="reviewsStatCard">
-            <span id="reviewsLabel" class="stat-label">Page reviews</span>
-            <span id="reviewsValue" class="stat-value">—</span>
-            <span id="reviewsDetail" class="stat-detail">Recommendations and reviews</span>
-        </article>
-        <article class="card stat" id="ratingStatCard">
-            <span id="ratingLabel" class="stat-label">Page rating</span>
-            <span id="ratingValue" class="stat-value">—</span>
-            <span id="ratingDetail" class="stat-detail">No rating loaded</span>
-        </article>
+    <section class="profile-card" id="xProfile"></section>
+
+    <section class="metrics">
+        <article class="metric"><div class="metric-label" id="m1Label">Posts</div><div class="metric-value" id="m1">—</div><div class="metric-detail" id="m1Detail">Collected items</div></article>
+        <article class="metric"><div class="metric-label" id="m2Label">Comments</div><div class="metric-value" id="m2">—</div><div class="metric-detail" id="m2Detail">Analyzed responses</div></article>
+        <article class="metric"><div class="metric-label">Negative</div><div class="metric-value" id="m3">—</div><div class="metric-detail" id="m3Detail">VADER threshold</div></article>
+        <article class="metric"><div class="metric-label" id="m4Label">Reactions</div><div class="metric-value" id="m4">—</div><div class="metric-detail" id="m4Detail">Engagement</div></article>
+        <article class="metric"><div class="metric-label" id="m5Label">Reviews</div><div class="metric-value" id="m5">—</div><div class="metric-detail" id="m5Detail">Platform specific</div></article>
+        <article class="metric"><div class="metric-label" id="m6Label">Status</div><div class="metric-value" id="m6">—</div><div class="metric-detail" id="m6Detail">Not synced</div></article>
     </section>
 
-    <section class="overview">
-        <article class="card overview-card">
-            <div class="section-head">
-                <h2>Sentiment distribution</h2>
-                <span id="distributionMeta" class="section-meta">No data yet</span>
-            </div>
-            <div class="distribution" aria-label="Sentiment distribution">
-                <span id="positiveBar" class="bar-positive"></span>
-                <span id="neutralBar" class="bar-neutral"></span>
-                <span id="warningBar" class="bar-warning"></span>
-                <span id="criticalBar" class="bar-critical"></span>
-            </div>
-            <div class="legend">
-                <div class="legend-item"><span class="legend-dot bar-positive"></span>Positive<strong id="positiveCount">—</strong></div>
-                <div class="legend-item"><span class="legend-dot bar-neutral"></span>Neutral<strong id="neutralCount">—</strong></div>
-                <div class="legend-item"><span class="legend-dot bar-warning"></span>Warning<strong id="warningCount">—</strong></div>
-                <div class="legend-item"><span class="legend-dot bar-critical"></span>Critical<strong id="criticalCount">—</strong></div>
-            </div>
-        </article>
+    <section class="panel">
+        <nav class="tabs">
+            <button class="tab-button active" data-tab="comments" id="commentsTab">Comments</button>
+            <button class="tab-button" data-tab="engagement" id="engagementTab">Post reactions</button>
+            <button class="tab-button" data-tab="reviews" id="reviewsTab">Reviews</button>
+            <button class="tab-button" data-tab="messages" id="messagesTab">Messages</button>
+        </nav>
 
-        <article class="card overview-card">
-            <div class="section-head"><h2>Last synchronization</h2></div>
-            <div class="sync-details">
-                <div class="detail-row"><span>Status</span><span id="syncStatus">Not synced</span></div>
-                <div class="detail-row"><span>Mode</span><span id="syncMode">—</span></div>
-                <div class="detail-row"><span>Completed</span><span id="syncTime">—</span></div>
-                <div class="detail-row"><span>Negative threshold</span><span id="thresholdValue">—</span></div>
-            </div>
-        </article>
-    </section>
-
-    <nav class="tabs" aria-label="Dashboard views">
-        <button class="tab-button active" data-tab="comments" type="button">Comments</button>
-        <button class="tab-button" data-tab="post-reactions" type="button">Post reactions</button>
-        <button class="tab-button" data-tab="reviews" id="reviewsTabBtn" type="button">Reviews</button>
-        <button class="tab-button" data-tab="messages" type="button">Messages</button>
-    </nav>
-
-    <section id="commentsPanel" class="tab-panel" data-panel="comments">
-        <article class="card results-card">
-            <div class="results-header">
-                <div>
-                    <h2>Analyzed comments</h2>
-                    <span id="resultCount" class="section-meta">Run a sync to load comments</span>
-                </div>
-                <div class="filters" aria-label="Comment filters">
-                    <button class="filter active" data-filter="all" type="button">All</button>
-                    <button class="filter" data-filter="negative" type="button">Negative</button>
-                    <button class="filter" data-filter="positive" type="button">Positive</button>
-                    <button class="filter" data-filter="neutral" type="button">Neutral</button>
+        <div class="tab-panel" data-panel="comments">
+            <div class="panel-head">
+                <div><h2 id="commentsTitle">Comments</h2><div class="meta" id="commentsMeta">No data yet</div></div>
+                <div class="filters">
+                    <button class="filter active" data-filter="all">All</button>
+                    <button class="filter" data-filter="negative">Negative</button>
+                    <button class="filter" data-filter="positive">Positive</button>
+                    <button class="filter" data-filter="neutral">Neutral</button>
                 </div>
             </div>
-            <div id="emptyState" class="empty">
-                <strong>No comments loaded</strong>
-                Click Sync now to fetch and analyze the latest Page comments.
-            </div>
-            <div id="tableWrap" class="table-wrap" hidden>
+            <div class="table-wrap" id="commentTableWrap" hidden>
                 <table>
-                    <thead>
-                    <tr>
-                        <th>Sentiment</th>
-                        <th>Comment and post</th>
-                        <th>Reactions</th>
-                        <th>Score</th>
-                        <th>Created</th>
-                    </tr>
-                    </thead>
+                    <thead><tr><th>Sentiment</th><th>Author</th><th>Message</th><th>Engagement</th><th>Score</th><th>Time</th></tr></thead>
                     <tbody id="commentRows"></tbody>
                 </table>
             </div>
-        </article>
-    </section>
+            <div class="empty" id="commentEmpty"><strong>No comments loaded</strong>Run a sync to collect data.</div>
+        </div>
 
-    <section class="tab-panel" data-panel="post-reactions" hidden>
-        <article class="card reactions-card">
-            <div class="results-header">
-                <div>
-                    <h2 id="reactionsHeading">Post reactions</h2>
-                    <span id="reactionMeta" class="section-meta">Run a sync to load reactions</span>
-                </div>
-            </div>
-            <div id="reactionSummary" class="reaction-summary" aria-label="Reaction totals by type">
-                <div class="reaction-item" id="rxLikeItem"><span id="rxLikeLabel">Like</span><strong id="likeCount">—</strong></div>
-                <div class="reaction-item rx-fb-only">Love<strong id="loveCount">—</strong></div>
-                <div class="reaction-item rx-fb-only">Care<strong id="careCount">—</strong></div>
-                <div class="reaction-item rx-fb-only">Haha<strong id="hahaCount">—</strong></div>
-                <div class="reaction-item rx-fb-only">Wow<strong id="wowCount">—</strong></div>
-                <div class="reaction-item rx-fb-only">Sad<strong id="sadCount">—</strong></div>
-                <div class="reaction-item rx-fb-only">Angry<strong id="angryCount">—</strong></div>
-            </div>
-            <p id="reactionNote" class="reaction-note">Meta can include some Care activity in Like counts; Care shows the separate CARE result returned by the API.</p>
-            <div id="reactionEmpty" class="empty">
-                <strong>No reactions loaded</strong>
-                Click Sync now to fetch reaction totals for each Page post.
-            </div>
-            <div id="reactionTableWrap" class="table-wrap" hidden>
+        <div class="tab-panel" data-panel="engagement" hidden>
+            <div class="panel-head"><div><h2 id="engagementTitle">Post reactions</h2><div class="meta" id="engagementMeta">No data yet</div></div></div>
+            <div class="table-wrap" id="engagementTableWrap" hidden>
                 <table>
-                    <thead>
-                    <tr id="reactionHeaderRow">
-                        <th>Post</th>
-                        <th>Total</th>
-                        <th>Like</th>
-                        <th>Love</th>
-                        <th>Care</th>
-                        <th>Haha</th>
-                        <th>Wow</th>
-                        <th>Sad</th>
-                        <th>Angry</th>
-                    </tr>
-                    </thead>
-                    <tbody id="reactionRows"></tbody>
+                    <thead id="engagementHead"></thead>
+                    <tbody id="engagementRows"></tbody>
                 </table>
             </div>
-        </article>
-    </section>
+            <div class="empty" id="engagementEmpty"><strong>No engagement loaded</strong>Run a sync to collect data.</div>
+        </div>
 
-    <section class="tab-panel" data-panel="reviews" id="reviewsPanel" hidden>
-        <article class="card results-card">
-            <div class="results-header">
-                <div>
-                    <h2>Page reviews</h2>
-                    <span id="reviewMeta" class="section-meta">Run a sync to load reviews</span>
-                </div>
+        <div class="tab-panel" data-panel="reviews" hidden>
+            <div class="panel-head"><div><h2>Facebook reviews</h2><div class="meta" id="reviewMeta">No data yet</div></div></div>
+            <div class="table-wrap" id="reviewTableWrap" hidden>
+                <table><thead><tr><th>Reviewer</th><th>Recommendation</th><th>Review</th><th>Rating</th><th>Sentiment</th><th>Time</th></tr></thead><tbody id="reviewRows"></tbody></table>
             </div>
-            <div id="reviewEmpty" class="empty">
-                <strong>No reviews loaded</strong>
-                The Page may not have reviews enabled or accessible.
-            </div>
-            <div id="reviewTableWrap" class="table-wrap" hidden>
-                <table>
-                    <thead>
-                    <tr>
-                        <th>Reviewer</th>
-                        <th>Recommendation</th>
-                        <th>Review</th>
-                        <th>Rating</th>
-                        <th>Sentiment</th>
-                        <th>Created</th>
-                    </tr>
-                    </thead>
-                    <tbody id="reviewRows"></tbody>
-                </table>
-            </div>
-        </article>
-    </section>
+            <div class="empty" id="reviewEmpty"><strong>No reviews loaded</strong>Run a Facebook sync to collect reviews.</div>
+        </div>
 
-    <section class="tab-panel" data-panel="messages" hidden>
-        <article class="card results-card">
-            <div class="results-header">
-                <div>
-                    <h2>Messenger inbox</h2>
-                    <span id="messagesMeta" class="section-meta">Run a sync to load inbox messages</span>
-                </div>
-                <div class="filters" aria-label="Message filters">
-                    <button class="msg-filter active" data-filter="all" type="button">All</button>
-                    <button class="msg-filter" data-filter="negative" type="button">Flagged</button>
-                    <button class="msg-filter" data-filter="critical" type="button">Critical</button>
-                    <button class="msg-filter" data-filter="positive" type="button">Positive</button>
-                </div>
-            </div>
-            <div class="reaction-summary" style="grid-template-columns: repeat(4, 1fr);" aria-label="Message statistics">
-                <div class="reaction-item">Threads<strong id="msgTotalConvs">—</strong></div>
-                <div class="reaction-item">Total messages<strong id="msgTotalCount">—</strong></div>
-                <div class="reaction-item">Customer inquiries<strong id="msgCustomerCount">—</strong></div>
-                <div class="reaction-item">Page replies<strong id="msgPageReplies">—</strong></div>
-            </div>
-            <div id="messagesEmpty" class="empty">
-                <strong>No inbox messages loaded</strong>
-                Click Sync now to extract Facebook Page Messenger conversations.
-                <p style="margin-top: 8px; font-size: 12px; color: var(--muted);">
-                    Note: Your Page Access Token must have the <code>pages_messaging</code> permission enabled.
-                </p>
-            </div>
-            <div id="messagesContainer" class="messages-layout" hidden>
-                <div class="threads-pane">
-                    <div class="thread-search-box">
-                        <input type="search" id="threadSearchInput" placeholder="Search conversations..." aria-label="Search conversations">
-                    </div>
-                    <div id="threadsList" class="threads-list"></div>
-                </div>
-                <div class="conversation-pane">
-                    <div id="conversationHeader" class="conversation-header">
-                        <div>
-                            <h3 id="activeThreadName" style="margin: 0; font-size: 15px; font-weight: 750;">Select a conversation</h3>
-                            <span id="activeThreadMeta" style="font-size: 12px; color: var(--muted);">—</span>
-                        </div>
-                        <div id="activeThreadBadge"></div>
-                    </div>
-                    <div id="messageStream" class="message-stream">
-                        <div class="empty" style="padding: 40px 10px;">Select a thread on the left to view messages</div>
-                    </div>
-                </div>
-            </div>
-        </article>
+        <div class="tab-panel" data-panel="messages" hidden>
+            <div class="panel-head"><div><h2>Messages</h2><div class="meta" id="messageMeta">No data yet</div></div></div>
+            <div class="message-layout" id="messageLayout" hidden><div class="thread-list" id="threadList"></div><div class="chat" id="chat"></div></div>
+            <div class="empty" id="messageEmpty"><strong>No conversations loaded</strong>Run a sync with messaging permissions.</div>
+        </div>
     </section>
-</main>
+</div>
 
 <script>
-    const syncButton = document.getElementById('syncButton');
-    const notice = document.getElementById('notice');
-    let latestResult = null;
-    let activeFilter = 'all';
-    let activeMessageFilter = 'all';
-    let activeConversationId = null;
-    let conversationSearchTerm = '';
-    let currentPlatform = 'facebook';
-    const platformResults = { facebook: null, instagram: null };
+    const state = {
+        platform: 'facebook',
+        activeTab: 'comments',
+        filter: 'all',
+        cache: { facebook: null, instagram: null, x: null },
+        activeConversationId: null
+    };
 
-    document.querySelectorAll('.platform-btn').forEach(btn => {
-        btn.addEventListener('click', () => switchPlatform(btn.dataset.platform));
-    });
+    const $ = id => document.getElementById(id);
+    const platformButtons = [...document.querySelectorAll('.platform-button')];
+    const tabButtons = [...document.querySelectorAll('.tab-button')];
+    const filterButtons = [...document.querySelectorAll('.filter')];
+
+    platformButtons.forEach(button => button.addEventListener('click', () => switchPlatform(button.dataset.platform)));
+    tabButtons.forEach(button => button.addEventListener('click', () => selectTab(button.dataset.tab)));
+    filterButtons.forEach(button => button.addEventListener('click', () => {
+        state.filter = button.dataset.filter;
+        filterButtons.forEach(item => item.classList.toggle('active', item === button));
+        renderComments();
+    }));
+    $('syncButton').addEventListener('click', syncNow);
+    $('xUsername').addEventListener('keydown', event => { if (event.key === 'Enter') syncNow(); });
+
+    function platformLabel(platform = state.platform) {
+        if (platform === 'x') return 'X';
+        return platform.charAt(0).toUpperCase() + platform.slice(1);
+    }
 
     function switchPlatform(platform) {
-        if (currentPlatform === platform) return;
-        currentPlatform = platform;
-        document.querySelectorAll('.platform-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.platform === platform);
-        });
+        state.platform = platform;
+        platformButtons.forEach(button => button.classList.toggle('active', button.dataset.platform === platform));
+        $('xTarget').classList.toggle('visible', platform === 'x');
+        $('reviewsTab').hidden = platform !== 'facebook';
+        $('messagesTab').hidden = platform === 'x';
+        $('commentsTab').textContent = platform === 'x' ? 'Replies' : 'Comments';
+        $('engagementTab').textContent = platform === 'x' ? 'Post engagement' : (platform === 'instagram' ? 'Media engagement' : 'Post reactions');
+        $('commentsTitle').textContent = platform === 'x' ? 'Replies and sentiment' : 'Comments and sentiment';
+        $('engagementTitle').textContent = platform === 'x' ? 'X post engagement' : (platform === 'instagram' ? 'Instagram media engagement' : 'Facebook post reactions');
 
-        const isIg = platform === 'instagram';
-        document.getElementById('heroEyebrow').textContent = isIg ? 'Instagram Professional' : 'Facebook Page';
-        document.getElementById('heroCopy').textContent = isIg
-            ? 'Fetch the latest Instagram media captions, comments, nested replies, and direct messages, then analyze sentiment.'
-            : 'Fetch the latest Page comments, reactions, reviews, and Messenger conversations, then analyze sentiment.';
-        document.getElementById('postsLabel').textContent = isIg ? 'Media fetched' : 'Posts fetched';
-        document.getElementById('reviewsLabel').textContent = isIg ? 'Instagram reviews' : 'Page reviews';
-
-        const reviewsStatCard = document.getElementById('reviewsStatCard');
-        const ratingStatCard = document.getElementById('ratingStatCard');
-        const reviewsTabBtn = document.getElementById('reviewsTabBtn');
-        const reviewsPanel = document.getElementById('reviewsPanel');
-
-        if (reviewsStatCard) reviewsStatCard.hidden = isIg;
-        if (ratingStatCard) ratingStatCard.hidden = isIg;
-        if (reviewsTabBtn) reviewsTabBtn.hidden = isIg;
-        if (isIg && reviewsPanel) reviewsPanel.hidden = true;
-
-        if (isIg) {
-            const activeTabBtn = document.querySelector('.tab-button.active');
-            if (activeTabBtn && activeTabBtn.dataset.tab === 'reviews') {
-                selectTab('comments');
-            }
-        }
-
-        // Adapt reactions UI for Instagram (only one Love / Like reaction)
-        const rxSummary = document.getElementById('reactionSummary');
-        const rxLikeLabel = document.getElementById('rxLikeLabel');
-        const rxNote = document.getElementById('reactionNote');
-        const fbRxItems = document.querySelectorAll('.rx-fb-only');
-        const rxHeaderRow = document.getElementById('reactionHeaderRow');
-        const rxHeading = document.getElementById('reactionsHeading');
-        const rxTabBtn = document.querySelector('.tab-button[data-tab="post-reactions"]');
-
-        if (rxSummary) rxSummary.classList.toggle('ig-mode', isIg);
-        if (rxLikeLabel) rxLikeLabel.textContent = isIg ? 'Love / Like ❤️' : 'Like';
-        if (rxNote) rxNote.hidden = isIg;
-        fbRxItems.forEach(item => item.hidden = isIg);
-        if (rxHeading) rxHeading.textContent = isIg ? 'Media reactions' : 'Post reactions';
-        if (rxTabBtn) rxTabBtn.textContent = isIg ? 'Media reactions' : 'Post reactions';
-        if (rxHeaderRow) {
-            rxHeaderRow.innerHTML = isIg
-                ? '<th>Media</th><th style="text-align: center; width: 160px;">Love / Like ❤️</th>'
-                : '<th>Post</th><th>Total</th><th>Like</th><th>Love</th><th>Care</th><th>Haha</th><th>Wow</th><th>Sad</th><th>Angry</th>';
-        }
-
-        const syncBtn = document.getElementById('syncButton');
-        if (isIg) {
-            syncBtn.style.background = 'linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045)';
+        if ((state.activeTab === 'reviews' && platform !== 'facebook') || (state.activeTab === 'messages' && platform === 'x')) {
+            selectTab('comments');
         } else {
-            syncBtn.style.background = 'var(--brand)';
+            selectTab(state.activeTab);
         }
-
         hideNotice();
-
-        if (platformResults[platform]) {
-            renderResult(platformResults[platform]);
-        } else {
-            loadStatus(platform);
-        }
+        const cached = state.cache[platform];
+        if (cached) render(cached); else loadStatus(platform);
     }
 
-    syncButton.addEventListener('click', syncNow);
-    document.querySelectorAll('.filter').forEach(button => {
-        button.addEventListener('click', () => {
-            activeFilter = button.dataset.filter;
-            document.querySelectorAll('.filter').forEach(item => item.classList.toggle('active', item === button));
-            renderComments();
-        });
-    });
-    document.querySelectorAll('.msg-filter').forEach(button => {
-        button.addEventListener('click', () => {
-            activeMessageFilter = button.dataset.filter;
-            document.querySelectorAll('.msg-filter').forEach(item => item.classList.toggle('active', item === button));
-            renderThreadList();
-        });
-    });
-    const threadSearchInput = document.getElementById('threadSearchInput');
-    if (threadSearchInput) {
-        threadSearchInput.addEventListener('input', (e) => {
-            conversationSearchTerm = e.target.value.toLowerCase().trim();
-            renderThreadList();
-        });
+    function selectTab(tab) {
+        state.activeTab = tab;
+        tabButtons.forEach(button => button.classList.toggle('active', button.dataset.tab === tab));
+        document.querySelectorAll('.tab-panel').forEach(panel => panel.hidden = panel.dataset.panel !== tab);
     }
-    document.querySelectorAll('.tab-button').forEach(button => {
-        button.addEventListener('click', () => selectTab(button.dataset.tab));
-    });
-
-    loadStatus('facebook');
 
     async function loadStatus(platform) {
-        const plat = platform || currentPlatform;
+        setConnection('', `Checking ${platformLabel(platform)} status…`);
         try {
-            const response = await fetch(`/api/status?platform=${plat}`);
+            const response = await fetch(`/api/status?platform=${encodeURIComponent(platform)}`);
             const data = await response.json();
-            if (response.ok && data.syncedAt) {
-                platformResults[plat] = data;
-                if (plat === currentPlatform) renderResult(data);
-            } else if (plat === currentPlatform) {
-                renderEmptyPlatform(plat);
+            if (!response.ok) throw new Error(data.error || 'Could not load status');
+            if (data.status === 'NOT_SYNCED') {
+                if (platform === state.platform) renderEmpty();
+                return;
             }
-        } catch (_) {
-            setConnection('error', 'Dashboard server unavailable');
+            state.cache[platform] = data;
+            if (platform === state.platform) render(data);
+        } catch (error) {
+            if (platform === state.platform) {
+                showNotice(error.message);
+                setConnection('error', 'Dashboard server unavailable');
+            }
         }
-    }
-
-    function renderEmptyPlatform(platform) {
-        const isIg = platform === 'instagram';
-        document.getElementById('postsValue').textContent = '—';
-        document.getElementById('commentsValue').textContent = '—';
-        document.getElementById('negativeValue').textContent = '—';
-        document.getElementById('negativeDetail').textContent = 'Configured threshold';
-        document.getElementById('reviewsValue').textContent = isIg ? 'N/A' : '—';
-        document.getElementById('reviewsDetail').textContent = isIg ? 'Not on Instagram' : 'Recommendations and reviews';
-        document.getElementById('ratingValue').textContent = isIg ? 'N/A' : '—';
-        document.getElementById('ratingDetail').textContent = isIg ? 'Not on Instagram' : 'No rating loaded';
-        document.getElementById('positiveCount').textContent = '—';
-        document.getElementById('neutralCount').textContent = '—';
-        document.getElementById('warningCount').textContent = '—';
-        document.getElementById('criticalCount').textContent = '—';
-        document.getElementById('distributionMeta').textContent = 'No data yet';
-        document.getElementById('syncStatus').textContent = 'Not synced';
-        document.getElementById('syncMode').textContent = isIg ? 'Instagram' : 'Facebook';
-        document.getElementById('syncTime').textContent = '—';
-        document.getElementById('thresholdValue').textContent = '—';
-        setWidth('positiveBar', 0);
-        setWidth('neutralBar', 0);
-        setWidth('warningBar', 0);
-        setWidth('criticalBar', 0);
-        setConnection('', `Ready for ${isIg ? 'Instagram' : 'Facebook'} sync`);
-
-        document.getElementById('rows').replaceChildren();
-        document.getElementById('emptyState').hidden = false;
-        document.getElementById('emptyState').innerHTML = `<strong>No ${isIg ? 'Instagram' : 'Facebook'} comments yet</strong>Click "Sync now" to collect data.`;
-
-        document.getElementById('threadsList').replaceChildren();
-        document.getElementById('threadEmptyState').hidden = false;
-        document.getElementById('chatMessages').replaceChildren();
-        document.getElementById('chatEmptyState').hidden = false;
-
-        document.getElementById('likeCount').textContent = '—';
-        ['love', 'care', 'haha', 'wow', 'sad', 'angry'].forEach(type => {
-            const el = document.getElementById(`${type}Count`);
-            if (el) el.textContent = '—';
-        });
-        document.getElementById('reactionMeta').textContent = isIg ? 'Run a sync to load Instagram media likes' : 'Run a sync to load reactions';
-        document.getElementById('reactionRows').replaceChildren();
-        document.getElementById('reactionTableWrap').hidden = true;
-        document.getElementById('reactionEmpty').hidden = false;
-        document.getElementById('reactionEmpty').innerHTML = isIg
-            ? '<strong>No media likes loaded</strong>Click Sync now to fetch like counts for Instagram media.'
-            : '<strong>No reactions loaded</strong>Click Sync now to fetch reaction totals for each Page post.';
     }
 
     async function syncNow() {
+        const platform = state.platform;
+        let url = `/api/sync?platform=${encodeURIComponent(platform)}`;
+        if (platform === 'x') {
+            const username = $('xUsername').value.trim().replace(/^@+/, '');
+            if (username) url += `&username=${encodeURIComponent(username)}`;
+        }
         setLoading(true);
         hideNotice();
-        const isIg = currentPlatform === 'instagram';
-        setConnection('', `Synchronization running (${isIg ? 'Instagram' : 'Facebook'})`);
-
+        setConnection('', `Synchronizing ${platformLabel(platform)}…`);
         try {
-            const response = await fetch(`/api/sync?platform=${currentPlatform}`, { method: 'POST' });
+            const response = await fetch(url, { method: 'POST' });
             const data = await response.json();
             if (!response.ok) throw new Error(data.error || 'Synchronization failed');
-            platformResults[currentPlatform] = data;
-            renderResult(data);
+            state.cache[platform] = data;
+            if (state.platform === platform) render(data);
         } catch (error) {
             showNotice(error.message);
-            setConnection('error', 'Last sync failed');
-            document.getElementById('syncStatus').textContent = 'Failed';
+            setConnection('error', `${platformLabel(platform)} sync failed`);
         } finally {
             setLoading(false);
         }
     }
 
-    function renderResult(result) {
-        latestResult = result;
-        const isIg = currentPlatform === 'instagram';
-        document.getElementById('postsValue').textContent = isIg ? (result.totalMedia ?? 0) : (result.totalPosts ?? 0);
-        document.getElementById('commentsValue').textContent = result.totalComments ?? 0;
-        document.getElementById('negativeValue').textContent = result.negativeComments ?? 0;
-        document.getElementById('negativeDetail').textContent = `${(result.negativeRate ?? 0).toFixed(1)}% of analyzed comments`;
-
-        if (isIg) {
-            document.getElementById('reviewsValue').textContent = 'N/A';
-            document.getElementById('reviewsDetail').textContent = 'Reviews not on Instagram';
-            document.getElementById('ratingValue').textContent = 'N/A';
-            document.getElementById('ratingDetail').textContent = 'Ratings not on Instagram';
-        } else {
-            document.getElementById('reviewsValue').textContent = result.totalReviews ?? 0;
-            document.getElementById('reviewsDetail').textContent = `${result.negativeReviews ?? 0} negative reviews`;
-            const rating = result.pageRating || {};
-            document.getElementById('ratingValue').textContent =
-                rating.overallStarRating > 0 ? Number(rating.overallStarRating).toFixed(1) : '—';
-            const yesCount = rating.yesRecommendations ?? 0;
-            const noCount = rating.noRecommendations ?? 0;
-            const ratingCount = rating.ratingCount ?? 0;
-            if (ratingCount > 0 || (yesCount + noCount) > 0) {
-                document.getElementById('ratingDetail').textContent =
-                    `${ratingCount} ratings · 👍 ${yesCount} Yes · 👎 ${noCount} No`;
-            } else {
-                document.getElementById('ratingDetail').textContent = 'No rating available';
-            }
-        }
-
-        document.getElementById('positiveCount').textContent = result.positiveComments;
-        document.getElementById('neutralCount').textContent = result.neutralComments;
-        document.getElementById('warningCount').textContent = result.warningComments;
-        document.getElementById('criticalCount').textContent = result.criticalComments;
-        document.getElementById('distributionMeta').textContent = `${result.totalComments} comments`;
-        document.getElementById('syncStatus').textContent = 'Completed';
-        document.getElementById('syncMode').textContent = isIg ? 'Live Instagram' : 'Live Facebook';
-        document.getElementById('syncTime').textContent = formatTime(result.syncedAt);
-        document.getElementById('thresholdValue').textContent = `compound ≤ ${result.negativeThreshold}`;
-
-        const total = Math.max(result.totalComments, 1);
-        setWidth('positiveBar', result.positiveComments / total);
-        setWidth('neutralBar', result.neutralComments / total);
-        setWidth('warningBar', result.warningComments / total);
-        setWidth('criticalBar', result.criticalComments / total);
-        setConnection('ready', `Last synced ${formatTime(result.syncedAt)} (${isIg ? 'Instagram' : 'Facebook'})`);
-        renderReactions(result);
+    function render(result) {
+        renderSummary(result);
+        renderWarnings(result);
+        renderXProfile(result);
         renderComments();
+        renderEngagement(result);
         renderReviews(result);
         renderMessages(result);
+        setConnection('ready', `Last synced ${formatTime(result.syncedAt)} · ${platformLabel()}`);
     }
 
-    function renderReactions(result) {
-        const isIg = currentPlatform === 'instagram';
-        if (isIg) {
-            document.getElementById('likeCount').textContent = result.totalLikes ?? 0;
-            document.getElementById('reactionMeta').textContent =
-                `${result.totalLikes ?? 0} Likes across ${result.totalMedia ?? 0} media items (Meta does not disclose reactor user identities on Instagram)`;
+    function renderSummary(result) {
+        const p = state.platform;
+        if (p === 'x') {
+            setMetric(1, 'Posts', result.totalPosts ?? 0, `@${result.targetUser?.username || 'user'}`);
+            setMetric(2, 'Replies', result.totalComments ?? 0, 'VADER analyzed');
+            setMetric(3, 'Negative', result.negativeComments ?? 0, `${formatPercent(result.negativeRate)} of fetched replies`);
+            setMetric(4, 'Likes', result.totalLikes ?? 0, 'Across fetched posts');
+            setMetric(5, 'Reposts', result.totalReposts ?? 0, `${result.totalQuotes ?? 0} quote posts`);
+            setMetric(6, 'Status', 'OK', formatTime(result.syncedAt));
+        } else if (p === 'instagram') {
+            setMetric(1, 'Media', result.totalMedia ?? 0, 'Fetched media');
+            setMetric(2, 'Comments', result.totalComments ?? 0, 'VADER analyzed');
+            setMetric(3, 'Negative', result.negativeComments ?? 0, `${formatPercent(result.negativeRate)} of comments`);
+            setMetric(4, 'Likes', result.totalLikes ?? 0, 'Across media');
+            setMetric(5, 'Reviews', 'N/A', 'Not available on Instagram');
+            setMetric(6, 'Status', 'OK', formatTime(result.syncedAt));
         } else {
-            const totals = result.reactionTotals || {};
-            ['like', 'love', 'care', 'haha', 'wow', 'sad', 'angry'].forEach(type => {
-                const el = document.getElementById(`${type}Count`);
-                if (el) el.textContent = totals[type] ?? 0;
-            });
-            document.getElementById('reactionMeta').textContent =
-                `${result.totalReactions} reactions across ${result.totalPosts} posts`;
-        }
-
-        const postReactions = isIg
-            ? (result.media || []).map(m => ({
-                postSnippet: m.mediaSnippet || '[Instagram Media]',
-                permalink: m.permalink,
-                likeCount: m.likeCount ?? 0,
-                reactions: { total: m.likeCount ?? 0, like: m.likeCount ?? 0 },
-                userReactions: []
-            }))
-            : (result.postReactions || []);
-        document.getElementById('reactionRows').replaceChildren(...postReactions.map(createReactionRow));
-        document.getElementById('reactionTableWrap').hidden = postReactions.length === 0;
-        document.getElementById('reactionEmpty').hidden = postReactions.length > 0;
-        if (isIg && postReactions.length === 0) {
-            document.getElementById('reactionEmpty').innerHTML =
-                '<strong>No media likes loaded</strong>Click Sync now to fetch like counts for Instagram media.';
-        } else if (!isIg && postReactions.length === 0) {
-            document.getElementById('reactionEmpty').innerHTML =
-                '<strong>No reactions loaded</strong>Click Sync now to fetch reaction totals for each Page post.';
+            setMetric(1, 'Posts', result.totalPosts ?? 0, 'Fetched Page posts');
+            setMetric(2, 'Comments', result.totalComments ?? 0, 'VADER analyzed');
+            setMetric(3, 'Negative', result.negativeComments ?? 0, `${formatPercent(result.negativeRate)} of comments`);
+            setMetric(4, 'Reactions', result.totalReactions ?? 0, 'Across posts');
+            setMetric(5, 'Reviews', result.totalReviews ?? 0, `${result.negativeReviews ?? 0} negative`);
+            setMetric(6, 'Status', 'OK', formatTime(result.syncedAt));
         }
     }
 
-    function renderReviews(result) {
-        const isIg = currentPlatform === 'instagram';
-        if (isIg) {
-            document.getElementById('reviewMeta').textContent = 'Reviews not applicable on Instagram';
-            document.getElementById('reviewTableWrap').hidden = true;
-            document.getElementById('reviewEmpty').hidden = false;
-            document.getElementById('reviewEmpty').innerHTML = '<strong>No Reviews on Instagram</strong><p style="margin-top:6px;color:var(--muted);font-size:13px;">Instagram does not have a native customer ratings and reviews feature like Facebook Pages. Media comments and Direct Messages are analyzed instead.</p>';
+    function setMetric(index, label, value, detail) {
+        $(`m${index}Label`).textContent = label;
+        $(`m${index}`).textContent = value;
+        $(`m${index}Detail`).textContent = detail;
+    }
+
+    function renderEmpty() {
+        [1,2,3,4,5,6].forEach(i => $(`m${i}`).textContent = '—');
+        $('m6Detail').textContent = 'Not synced';
+        $('commentRows').replaceChildren();
+        $('engagementRows').replaceChildren();
+        $('reviewRows').replaceChildren();
+        $('threadList').replaceChildren();
+        $('chat').replaceChildren();
+        $('commentTableWrap').hidden = true;
+        $('engagementTableWrap').hidden = true;
+        $('reviewTableWrap').hidden = true;
+        $('messageLayout').hidden = true;
+        $('commentEmpty').hidden = false;
+        $('engagementEmpty').hidden = false;
+        $('reviewEmpty').hidden = false;
+        $('messageEmpty').hidden = false;
+        $('xProfile').classList.remove('show');
+        $('warnings').classList.remove('show');
+        setConnection('', `Ready for ${platformLabel()} sync`);
+    }
+
+    function renderWarnings(result) {
+        const warnings = state.platform === 'x' ? (result.warnings || []) : [];
+        $('warnings').classList.toggle('show', warnings.length > 0);
+        $('warningList').replaceChildren(...warnings.map(text => {
+            const li = document.createElement('li');
+            li.textContent = text;
+            return li;
+        }));
+    }
+
+    function renderXProfile(result) {
+        const card = $('xProfile');
+        if (state.platform !== 'x' || !result.targetUser) {
+            card.classList.remove('show');
+            card.replaceChildren();
             return;
         }
-
-        const reviews = result.reviews || [];
-        const rating = result.pageRating || {};
-        const yesNo = (rating.yesRecommendations !== undefined && (rating.yesRecommendations > 0 || rating.noRecommendations > 0))
-            ? ` · 👍 ${rating.yesRecommendations} Yes · 👎 ${rating.noRecommendations} No`
-            : '';
-        document.getElementById('reviewMeta').textContent =
-            `${reviews.length} reviews · ${result.negativeReviews ?? 0} negative${yesNo}`;
-        document.getElementById('reviewRows').replaceChildren(...reviews.map(createReviewRow));
-        document.getElementById('reviewTableWrap').hidden = reviews.length === 0;
-        document.getElementById('reviewEmpty').hidden = reviews.length > 0;
+        const u = result.targetUser;
+        if (!$('xUsername').value) $('xUsername').value = u.username || '';
+        const avatar = u.profileImageUrl
+            ? Object.assign(document.createElement('img'), { className: 'profile-avatar', src: u.profileImageUrl, alt: '' })
+            : Object.assign(document.createElement('div'), { className: 'profile-fallback', textContent: (u.name || u.username || 'X').charAt(0).toUpperCase() });
+        const main = document.createElement('div'); main.className = 'profile-main';
+        const name = document.createElement('div'); name.className = 'profile-name'; name.textContent = `${u.name || u.username || 'X User'}${u.verified ? ' ✓' : ''}`;
+        const handle = document.createElement('div'); handle.className = 'profile-handle'; handle.textContent = `@${u.username || ''}${u.location ? ` · ${u.location}` : ''}`;
+        main.append(name, handle);
+        if (u.description) { const bio = document.createElement('div'); bio.className = 'profile-bio'; bio.textContent = u.description; main.appendChild(bio); }
+        const metrics = document.createElement('div'); metrics.className = 'profile-metrics';
+        metrics.append(profileMetric(u.followersCount, 'Followers'), profileMetric(u.followingCount, 'Following'), profileMetric(u.postCount, 'Posts'));
+        card.replaceChildren(avatar, main, metrics);
+        card.classList.add('show');
     }
 
-    function escapeHtml(str) {
-        if (!str) return '';
-        return String(str)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
-    }
-
-    function reactionEmoji(type) {
-        if (!type) return '👍';
-        switch (type.toUpperCase()) {
-            case 'LIKE': return '👍';
-            case 'LOVE': return '❤️';
-            case 'CARE': return '🥰';
-            case 'HAHA': return '😆';
-            case 'WOW': return '😮';
-            case 'SAD': return '😢';
-            case 'ANGRY': return '😡';
-            default: return '👍';
-        }
-    }
-
-    function createReactionRow(post) {
-        const isIg = currentPlatform === 'instagram';
-        const row = document.createElement('tr');
-        const postCell = document.createElement('td');
-        postCell.className = 'reaction-post';
-        const titleDiv = document.createElement('div');
-        titleDiv.textContent = post.postSnippet || (isIg ? '[Instagram Media]' : '[No post text]');
-        if (isIg && post.permalink) {
-            const link = document.createElement('a');
-            link.href = post.permalink;
-            link.target = '_blank';
-            link.rel = 'noopener noreferrer';
-            link.textContent = ' ↗ View';
-            link.style.fontSize = '12px';
-            link.style.marginLeft = '8px';
-            link.style.color = 'var(--brand)';
-            titleDiv.appendChild(link);
-        }
-        postCell.appendChild(titleDiv);
-
-        if (!isIg && post.userReactions && post.userReactions.length > 0) {
-            const reactorsToggle = document.createElement('details');
-            reactorsToggle.className = 'post-reactors-details';
-            const summary = document.createElement('summary');
-            summary.textContent = `👥 View ${post.userReactions.length} reactors`;
-            reactorsToggle.appendChild(summary);
-
-            const list = document.createElement('div');
-            list.className = 'reactor-chips';
-            post.userReactions.forEach(r => {
-                const chip = document.createElement('span');
-                chip.className = 'reactor-chip';
-                chip.textContent = `${reactionEmoji(r.type)} ${r.name || r.id}`;
-                if (r.id) chip.title = `ID: ${r.id}`;
-                list.appendChild(chip);
-            });
-            reactorsToggle.appendChild(list);
-            postCell.appendChild(reactorsToggle);
-        }
-        row.appendChild(postCell);
-
-        if (isIg) {
-            const cell = document.createElement('td');
-            cell.className = 'reaction-number';
-            const count = post.likeCount ?? post.reactions?.like ?? post.reactions?.total ?? 0;
-            cell.innerHTML = `<span style="font-weight: 700; color: #e1306c;">❤️ ${count}</span>`;
-            row.appendChild(cell);
-        } else {
-            ['total', 'like', 'love', 'care', 'haha', 'wow', 'sad', 'angry'].forEach(type => {
-                const cell = document.createElement('td');
-                cell.className = 'reaction-number';
-                cell.textContent = post.reactions?.[type] ?? 0;
-                row.appendChild(cell);
-            });
-        }
-        return row;
+    function profileMetric(value, label) {
+        const div = document.createElement('div');
+        const strong = document.createElement('strong'); strong.textContent = formatNumber(value ?? 0);
+        div.append(strong, document.createTextNode(label));
+        return div;
     }
 
     function renderComments() {
-        if (!latestResult) return;
-
-        const comments = latestResult.comments.filter(comment => {
-            if (activeFilter === 'negative') return comment.flagged;
-            if (activeFilter === 'positive') return comment.level === 'POSITIVE';
-            if (activeFilter === 'neutral') return comment.level === 'NEUTRAL';
+        const result = state.cache[state.platform];
+        if (!result) return;
+        const source = result.comments || [];
+        const rows = source.filter(item => {
+            if (state.filter === 'negative') return item.flagged || isNegativeLevel(item.level);
+            if (state.filter === 'positive') return item.level === 'POSITIVE';
+            if (state.filter === 'neutral') return item.level === 'NEUTRAL';
             return true;
         });
-
-        document.getElementById('resultCount').textContent = `${comments.length} of ${latestResult.totalComments} comments`;
-        const rows = document.getElementById('commentRows');
-        rows.replaceChildren(...comments.map(createRow));
-        document.getElementById('tableWrap').hidden = comments.length === 0;
-        const empty = document.getElementById('emptyState');
-        empty.hidden = comments.length > 0;
-        if (comments.length === 0) {
-            empty.innerHTML = '<strong>No matching comments</strong>Try a different sentiment filter.';
-        }
+        $('commentsMeta').textContent = `${rows.length} of ${source.length} ${state.platform === 'x' ? 'replies' : 'comments'}`;
+        $('commentRows').replaceChildren(...rows.map(createCommentRow));
+        $('commentTableWrap').hidden = rows.length === 0;
+        $('commentEmpty').hidden = rows.length > 0;
+        $('commentEmpty').innerHTML = rows.length ? '' : `<strong>No matching ${state.platform === 'x' ? 'replies' : 'comments'}</strong>Run a sync or change the sentiment filter.`;
     }
 
-    function createRow(comment) {
-        const row = document.createElement('tr');
+    function createCommentRow(item) {
+        const tr = document.createElement('tr');
+        const sentiment = document.createElement('td'); sentiment.appendChild(sentimentBadge(item.level));
+        const author = document.createElement('td'); author.appendChild(authorNode(item.author || item.from));
+        const message = document.createElement('td');
+        const text = document.createElement('div'); text.className = 'comment-text'; text.textContent = item.text || item.message || '[No text]';
+        const context = document.createElement('div'); context.className = 'context'; context.textContent = `${state.platform === 'instagram' ? 'Media' : 'Post'}: ${item.mediaSnippet || item.postSnippet || item.postId || '—'}`;
+        message.append(text, context);
+        if (item.replies?.length) message.appendChild(renderNestedReplies(item.replies));
+        if (item.userReactions?.length) message.appendChild(userChipsDetails(item.userReactions, 'Reactors'));
 
-        const sentimentCell = document.createElement('td');
-        const badge = document.createElement('span');
-        badge.className = `badge badge-${levelClass(comment.level)}`;
-        badge.textContent = levelLabel(comment.level);
-        sentimentCell.appendChild(badge);
-
-        const messageCell = document.createElement('td');
-
-        const author = comment.from || comment.author;
-        if (author && (author.name || author.username || author.id || author.pictureUrl)) {
-            messageCell.appendChild(createAuthor(author));
-        }
-
-        const isIg = currentPlatform === 'instagram';
-        const message = document.createElement('div');
-        message.className = 'comment-text';
-        message.textContent = comment.text || comment.message || '[No comment text]';
-        const context = document.createElement('div');
-        context.className = 'post-context';
-        const snippet = comment.mediaSnippet || comment.postSnippet || '';
-        context.textContent = (isIg ? 'Media: ' : 'Post: ') + snippet;
-        messageCell.append(message, context);
-
-        if (comment.replies && comment.replies.length > 0) {
-            const repliesWrap = document.createElement('div');
-            repliesWrap.className = 'nested-replies-wrap';
-
-            const repliesHeader = document.createElement('div');
-            repliesHeader.className = 'nested-replies-toggle';
-            repliesHeader.textContent = `💬 ${comment.replies.length} ${comment.replies.length === 1 ? 'reply' : 'replies'}:`;
-            repliesWrap.appendChild(repliesHeader);
-
-            const repliesList = document.createElement('div');
-            repliesList.className = 'nested-replies-list';
-
-            comment.replies.forEach(reply => {
-                const replyCard = document.createElement('div');
-                replyCard.className = 'nested-reply-card';
-
-                const replyMeta = document.createElement('div');
-                replyMeta.className = 'reply-meta';
-                const replyAuthor = reply.from || reply.author;
-                if (replyAuthor && (replyAuthor.name || replyAuthor.username || replyAuthor.id || replyAuthor.pictureUrl)) {
-                    replyMeta.appendChild(createAuthor(replyAuthor, true));
-                }
-                const replyBadge = document.createElement('span');
-                replyBadge.className = `badge badge-${levelClass(reply.level)}`;
-                replyBadge.textContent = levelLabel(reply.level);
-                const replyTime = document.createElement('span');
-                replyTime.className = 'time';
-                replyTime.textContent = formatTime(reply.timestamp || reply.createdTime);
-                replyMeta.append(replyBadge, replyTime);
-
-                const replyText = document.createElement('div');
-                replyText.className = 'reply-text';
-                replyText.textContent = reply.text || reply.message || '[No reply text]';
-
-                replyCard.append(replyMeta, replyText);
-
-                if (reply.userReactions && reply.userReactions.length > 0) {
-                    const replyReactors = document.createElement('div');
-                    replyReactors.className = 'reactor-chips';
-                    reply.userReactions.forEach(r => {
-                        const chip = document.createElement('span');
-                        chip.className = 'reactor-chip';
-                        chip.textContent = `${reactionEmoji(r.type)} ${r.name || r.id}`;
-                        if (r.id) chip.title = `ID: ${r.id}`;
-                        replyReactors.appendChild(chip);
-                    });
-                    replyCard.appendChild(replyReactors);
-                }
-
-                repliesList.appendChild(replyCard);
-            });
-            repliesWrap.appendChild(repliesList);
-            messageCell.appendChild(repliesWrap);
-        }
-
-        const scoreCell = document.createElement('td');
-        scoreCell.className = 'score';
-        scoreCell.textContent = Number(comment.score ?? comment.compound ?? 0).toFixed(3);
-
-        const reactionCell = document.createElement('td');
-        const reactionTotal = document.createElement('strong');
-        reactionTotal.className = 'comment-reaction-total';
-        const totalCommentLikes = comment.reactions?.total ?? comment.likeCount ?? 0;
-        reactionTotal.textContent = totalCommentLikes;
-        const reactionBreakdown = document.createElement('span');
-        reactionBreakdown.className = 'comment-reaction-breakdown';
-        if (isIg) {
-            reactionBreakdown.textContent = totalCommentLikes > 0 ? `${totalCommentLikes} Likes` : 'No likes';
-        } else {
-            const reactionParts = ['like', 'love', 'care', 'haha', 'wow', 'sad', 'angry']
-                .filter(type => (comment.reactions?.[type] ?? 0) > 0)
-                .map(type => `${typeLabel(type)} ${comment.reactions[type]}`);
-            reactionBreakdown.textContent = reactionParts.length > 0 ? reactionParts.join(' · ') : 'No reactions';
-        }
-        reactionCell.append(reactionTotal, reactionBreakdown);
-
-        if (comment.userReactions && comment.userReactions.length > 0) {
-            const commentReactors = document.createElement('div');
-            commentReactors.className = 'reactor-chips';
-            comment.userReactions.forEach(r => {
-                const chip = document.createElement('span');
-                chip.className = 'reactor-chip';
-                chip.textContent = `${reactionEmoji(r.type)} ${r.name || r.id}`;
-                if (r.id) chip.title = `ID: ${r.id}`;
-                commentReactors.appendChild(chip);
-            });
-            reactionCell.appendChild(commentReactors);
-        }
-
-        const timeCell = document.createElement('td');
-        timeCell.className = 'time';
-        timeCell.textContent = formatTime(comment.timestamp || comment.createdTime);
-
-        row.append(sentimentCell, messageCell, reactionCell, scoreCell, timeCell);
-        return row;
+        const engagement = document.createElement('td');
+        if (state.platform === 'x') engagement.textContent = `${item.likeCount ?? 0} likes`;
+        else if (state.platform === 'instagram') engagement.textContent = `${item.likeCount ?? item.reactions?.total ?? 0} likes`;
+        else engagement.textContent = `${item.reactions?.total ?? 0} reactions`;
+        const score = document.createElement('td'); score.textContent = Number(item.score ?? item.compound ?? 0).toFixed(3);
+        const time = document.createElement('td'); time.textContent = formatTime(item.createdTime || item.timestamp);
+        tr.append(sentiment, author, message, engagement, score, time);
+        return tr;
     }
 
-    function createAuthor(author = {}, isSmall = false) {
-        const wrapper = document.createElement('div');
-        wrapper.className = isSmall ? 'comment-author small' : 'comment-author';
-
-        if (author.pictureUrl) {
-            const picture = document.createElement('img');
-            picture.className = isSmall ? 'author-avatar small' : 'author-avatar';
-            picture.src = author.pictureUrl;
-            picture.alt = '';
-            picture.loading = 'lazy';
-            wrapper.appendChild(picture);
-        } else {
-            const fallback = document.createElement('span');
-            fallback.className = isSmall ? 'author-fallback small' : 'author-fallback';
-            const rawName = author.name || author.username || '';
-            fallback.textContent = (rawName.trim().charAt(0) || '?').toUpperCase();
-            wrapper.appendChild(fallback);
-        }
-
-        const details = document.createElement('div');
-        const name = document.createElement('div');
-        name.className = 'author-name';
-        name.textContent = author.name || author.username || (author.id ? `User ${author.id}` : 'Anonymous');
-        details.appendChild(name);
-        if (author.id) {
-            const id = document.createElement('div');
-            id.className = 'author-id';
-            id.textContent = `ID: ${author.id}`;
-            details.appendChild(id);
-        }
-        wrapper.appendChild(details);
-        return wrapper;
-    }
-
-    function typeLabel(type) {
-        return type.charAt(0).toUpperCase() + type.slice(1);
-    }
-
-    function createReviewRow(analyzedReview) {
-        const review = analyzedReview.review || analyzedReview || {};
-        const score = analyzedReview.score || review.score || {};
-        const row = document.createElement('tr');
-
-        const reviewerCell = document.createElement('td');
-        reviewerCell.className = 'reviewer-cell';
-        const reviewer = review.reviewer;
-        if (reviewer && (reviewer.name || reviewer.id || reviewer.pictureUrl)) {
-            reviewerCell.appendChild(createAuthor(reviewer));
-        } else {
-            reviewerCell.textContent = 'Anonymous';
-        }
-
-        const recommendationCell = document.createElement('td');
-        if (review.recommendationType === 'positive') {
-            recommendationCell.innerHTML = '<span class="badge badge-positive">👍 Yes</span>';
-        } else if (review.recommendationType === 'negative') {
-            recommendationCell.innerHTML = '<span class="badge badge-critical">👎 No</span>';
-        } else {
-            recommendationCell.textContent = typeLabel(review.recommendationType || 'unknown');
-        }
-
-        const reviewCell = document.createElement('td');
-        reviewCell.className = 'review-text';
-        reviewCell.textContent = review.reviewText || '[Recommendation without written review]';
-
-        const ratingCell = document.createElement('td');
-        ratingCell.textContent = review.rating > 0 ? `${review.rating} / 5` : '—';
-
-        const sentimentCell = document.createElement('td');
-        const badge = document.createElement('span');
-        badge.className = `badge badge-${levelClass(score.level || 'NEUTRAL')}`;
-        badge.textContent = levelLabel(score.level || 'NEUTRAL');
-        sentimentCell.appendChild(badge);
-
-        const timeCell = document.createElement('td');
-        timeCell.className = 'time';
-        timeCell.textContent = formatTime(review.createdTime);
-
-        row.append(reviewerCell, recommendationCell, reviewCell, ratingCell, sentimentCell, timeCell);
-        return row;
-    }
-
-    function selectTab(tab) {
-        if (currentPlatform === 'instagram' && tab === 'reviews') {
-            tab = 'comments';
-        }
-        document.querySelectorAll('.tab-button').forEach(button => {
-            button.classList.toggle('active', button.dataset.tab === tab);
+    function renderNestedReplies(replies) {
+        const wrap = document.createElement('div'); wrap.className = 'nested';
+        replies.forEach(reply => {
+            const item = document.createElement('div'); item.className = 'nested-item';
+            const who = reply.author || reply.from || {};
+            const title = document.createElement('strong'); title.textContent = who.name || who.username || 'User';
+            const text = document.createElement('span'); text.textContent = ` — ${reply.text || reply.message || '[No text]'}`;
+            item.append(title, text, document.createTextNode(' ')); item.appendChild(sentimentBadge(reply.level));
+            if (reply.userReactions?.length) item.appendChild(userChipsDetails(reply.userReactions, 'Reactors'));
+            wrap.appendChild(item);
         });
-        document.querySelectorAll('.tab-panel').forEach(panel => {
-            panel.hidden = panel.dataset.panel !== tab;
-        });
-    }
-
-    function renderMessages(result) {
-        const summary = result.messageSummary || {};
-        const conversations = result.conversations || [];
-
-        document.getElementById('msgTotalConvs').textContent = summary.totalConversations ?? conversations.length;
-        document.getElementById('msgTotalCount').textContent = summary.totalMessages ?? 0;
-        document.getElementById('msgCustomerCount').textContent = summary.customerMessages ?? 0;
-        document.getElementById('msgPageReplies').textContent = summary.pageReplies ?? 0;
-
-        const negRate = summary.negativeRate !== undefined ? Number(summary.negativeRate).toFixed(1) + '%' : '0.0%';
-        document.getElementById('messagesMeta').textContent =
-            `${conversations.length} conversation threads · ${summary.totalMessages ?? 0} messages · ${negRate} negative inquiries`;
-
-        const hasConvs = conversations.length > 0;
-        document.getElementById('messagesContainer').hidden = !hasConvs;
-        document.getElementById('messagesEmpty').hidden = hasConvs;
-
-        if (!hasConvs) return;
-
-        if (!activeConversationId || !conversations.some(c => c.id === activeConversationId)) {
-            activeConversationId = conversations[0].id;
-        }
-
-        renderThreadList();
-        renderActiveThread();
-    }
-
-    function renderThreadList() {
-        if (!latestResult) return;
-        const conversations = (latestResult.conversations || []).filter(conv => {
-            if (activeMessageFilter === 'negative') {
-                const isNeg = conv.overallSentiment === 'WARNING_NEGATIVE' || conv.overallSentiment === 'CRITICAL_NEGATIVE';
-                if (!isNeg) return false;
-            } else if (activeMessageFilter === 'critical') {
-                if (conv.overallSentiment !== 'CRITICAL_NEGATIVE') return false;
-            } else if (activeMessageFilter === 'positive') {
-                if (conv.overallSentiment !== 'POSITIVE') return false;
-            }
-
-            if (conversationSearchTerm) {
-                const names = (conv.participants || []).map(p => p.name || '').join(' ').toLowerCase();
-                const text = (conv.messages || []).map(m => m.message || m.rawMessage?.message || '').join(' ').toLowerCase();
-                if (!names.includes(conversationSearchTerm) && !text.includes(conversationSearchTerm) && !conv.id.toLowerCase().includes(conversationSearchTerm)) {
-                    return false;
-                }
-            }
-            return true;
-        });
-
-        const listEl = document.getElementById('threadsList');
-        listEl.replaceChildren(...conversations.map(createThreadItem));
-
-        if (conversations.length === 0) {
-            listEl.innerHTML = '<div class="empty" style="padding: 30px 10px; font-size: 13px;">No matching conversations</div>';
-        }
-    }
-
-    function createThreadItem(conv) {
-        const item = document.createElement('div');
-        item.className = `thread-item ${conv.id === activeConversationId ? 'active' : ''}`;
-        item.addEventListener('click', () => {
-            activeConversationId = conv.id;
-            renderThreadList();
-            renderActiveThread();
-        });
-
-        const header = document.createElement('div');
-        header.className = 'thread-item-header';
-
-        const nameEl = document.createElement('span');
-        nameEl.className = 'thread-participant';
-        nameEl.textContent = getParticipantNames(conv);
-
-        const badge = document.createElement('span');
-        badge.className = `badge badge-${levelClass(conv.overallSentiment)}`;
-        badge.textContent = levelLabel(conv.overallSentiment);
-
-        header.append(nameEl, badge);
-
-        const snippetEl = document.createElement('div');
-        snippetEl.className = 'thread-snippet';
-        const lastMsg = conv.messages && conv.messages.length > 0 ? conv.messages[conv.messages.length - 1] : null;
-        snippetEl.textContent = lastMsg ? (lastMsg.message || lastMsg.rawMessage?.message || '[Empty message]') : '[No messages]';
-
-        const timeEl = document.createElement('div');
-        timeEl.className = 'time';
-        timeEl.style.fontSize = '11px';
-        timeEl.style.marginTop = '4px';
-        timeEl.textContent = formatTime(conv.updatedTime);
-
-        item.append(header, snippetEl, timeEl);
-        return item;
-    }
-
-    function renderActiveThread() {
-        if (!latestResult) return;
-        const conv = (latestResult.conversations || []).find(c => c.id === activeConversationId);
-        const nameEl = document.getElementById('activeThreadName');
-        const metaEl = document.getElementById('activeThreadMeta');
-        const badgeEl = document.getElementById('activeThreadBadge');
-        const streamEl = document.getElementById('messageStream');
-
-        if (!conv) {
-            nameEl.textContent = 'Select a conversation';
-            metaEl.textContent = '—';
-            badgeEl.replaceChildren();
-            streamEl.innerHTML = '<div class="empty" style="padding: 40px 10px;">Select a thread on the left to view messages</div>';
-            return;
-        }
-
-        nameEl.textContent = getParticipantNames(conv);
-        metaEl.textContent = `${conv.messages.length} messages · Updated ${formatTime(conv.updatedTime)}`;
-
-        const badge = document.createElement('span');
-        badge.className = `badge badge-${levelClass(conv.overallSentiment)}`;
-        badge.textContent = levelLabel(conv.overallSentiment);
-        badgeEl.replaceChildren(badge);
-
-        streamEl.replaceChildren(...(conv.messages || []).map(createMessageBubble));
-        streamEl.scrollTop = streamEl.scrollHeight;
-    }
-
-    function createMessageBubble(msg) {
-        const wrap = document.createElement('div');
-        wrap.className = `msg-bubble-wrap ${msg.isFromPage ? 'page' : 'customer'}`;
-
-        const bubble = document.createElement('div');
-        bubble.className = 'msg-bubble';
-        const msgText = msg.message || msg.rawMessage?.message || '';
-        const hasText = msgText.trim().length > 0;
-        const attachments = msg.attachments || msg.rawMessage?.attachments || [];
-        if (hasText) {
-            const textEl = document.createElement('div');
-            textEl.textContent = msgText;
-            bubble.appendChild(textEl);
-        } else if (attachments.length === 0) {
-            const emptyEl = document.createElement('div');
-            emptyEl.textContent = '[No message text]';
-            bubble.appendChild(emptyEl);
-        }
-
-        if (attachments.length > 0) {
-            const attachWrap = document.createElement('div');
-            attachWrap.className = 'msg-attachments';
-            attachWrap.style.marginTop = hasText ? '8px' : '0';
-            attachWrap.style.display = 'flex';
-            attachWrap.style.flexDirection = 'column';
-            attachWrap.style.gap = '6px';
-
-            attachments.forEach(att => {
-                const targetUrl = att.url || att.previewUrl;
-                const isImg = (att.mimeType && att.mimeType.toLowerCase().startsWith('image'))
-                    || (att.previewUrl && !att.mimeType?.includes('video'))
-                    || (targetUrl && (targetUrl.includes('.png') || targetUrl.includes('.jpg') || targetUrl.includes('.jpeg') || targetUrl.includes('.webp')));
-
-                if (isImg && targetUrl) {
-                    const imgLink = document.createElement('a');
-                    imgLink.href = targetUrl;
-                    imgLink.target = '_blank';
-                    imgLink.rel = 'noopener noreferrer';
-                    const img = document.createElement('img');
-                    img.src = att.previewUrl || targetUrl;
-                    img.alt = att.name || 'Attachment';
-                    img.style.maxWidth = '240px';
-                    img.style.maxHeight = '240px';
-                    img.style.borderRadius = '8px';
-                    img.style.display = 'block';
-                    imgLink.appendChild(img);
-                    attachWrap.appendChild(imgLink);
-                } else if (targetUrl) {
-                    const fileLink = document.createElement('a');
-                    fileLink.href = targetUrl;
-                    fileLink.target = '_blank';
-                    fileLink.rel = 'noopener noreferrer';
-                    fileLink.style.display = 'inline-flex';
-                    fileLink.style.alignItems = 'center';
-                    fileLink.style.gap = '6px';
-                    fileLink.style.color = msg.isFromPage ? '#ffffff' : 'var(--brand)';
-                    fileLink.style.textDecoration = 'underline';
-                    fileLink.style.fontSize = '12px';
-                    fileLink.textContent = `📎 ${att.name || 'View Attachment'}`;
-                    attachWrap.appendChild(fileLink);
-                }
-            });
-            bubble.appendChild(attachWrap);
-        }
-
-        const meta = document.createElement('div');
-        meta.className = 'msg-meta';
-        const msgTime = msg.createdTime || msg.rawMessage?.createdTime;
-
-        if (msg.isFromPage) {
-            meta.textContent = `Page · ${formatTime(msgTime)}`;
-        } else {
-            const senderName = msg.from?.name || msg.rawMessage?.from?.name || 'Customer';
-            const senderSpan = document.createElement('span');
-            senderSpan.style.fontWeight = '600';
-            senderSpan.textContent = senderName;
-            meta.appendChild(senderSpan);
-
-            if (msg.score) {
-                const sentimentBadge = document.createElement('span');
-                sentimentBadge.className = `badge badge-${levelClass(msg.score.level)}`;
-                sentimentBadge.style.fontSize = '9px';
-                sentimentBadge.style.padding = '2px 6px';
-                sentimentBadge.textContent = `${Number(msg.score.compound).toFixed(2)} ${levelLabel(msg.score.level)}`;
-                meta.appendChild(sentimentBadge);
-            }
-
-            const timeSpan = document.createElement('span');
-            timeSpan.textContent = formatTime(msgTime);
-            meta.appendChild(timeSpan);
-        }
-
-        wrap.append(bubble, meta);
         return wrap;
     }
 
-    function getParticipantNames(conv) {
-        if (!conv.participants || conv.participants.length === 0) {
-            return `Thread #${conv.id}`;
+    function renderEngagement(result) {
+        const p = state.platform;
+        let items = [];
+        if (p === 'x') items = result.postReactions || [];
+        else if (p === 'instagram') items = result.media || [];
+        else items = result.postReactions || [];
+
+        if (p === 'x') {
+            $('engagementHead').innerHTML = '<tr><th>Post</th><th>Sentiment</th><th>Likes</th><th>Replies</th><th>Reposts</th><th>Quotes</th></tr>';
+            $('engagementMeta').textContent = `${items.length} posts · ${result.totalLikes ?? 0} likes · ${result.totalReposts ?? 0} reposts · ${result.totalQuotes ?? 0} quotes`;
+        } else if (p === 'instagram') {
+            $('engagementHead').innerHTML = '<tr><th>Media</th><th>Type</th><th>Likes</th><th>Comments</th></tr>';
+            $('engagementMeta').textContent = `${items.length} media items · ${result.totalLikes ?? 0} likes`;
+        } else {
+            $('engagementHead').innerHTML = '<tr><th>Post</th><th>Total</th><th>Like</th><th>Love</th><th>Care</th><th>Haha</th><th>Wow</th><th>Sad</th><th>Angry</th></tr>';
+            $('engagementMeta').textContent = `${items.length} posts · ${result.totalReactions ?? 0} reactions`;
         }
-        const nonPage = conv.participants.filter(p => p.id !== (latestResult?.pageId || ''));
-        if (nonPage.length > 0) {
-            return nonPage.map(p => p.name || p.id).join(', ');
+
+        $('engagementRows').replaceChildren(...items.map(item => createEngagementRow(item, p)));
+        $('engagementTableWrap').hidden = items.length === 0;
+        $('engagementEmpty').hidden = items.length > 0;
+    }
+
+    function createEngagementRow(item, platform) {
+        const tr = document.createElement('tr');
+        if (platform === 'x') {
+            const post = document.createElement('td'); post.className = 'engagement-post';
+            const text = document.createElement('span'); text.textContent = item.postSnippet || item.text || '[No post text]'; post.appendChild(text);
+            if (item.permalink) { const a = document.createElement('a'); a.href = item.permalink; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.textContent = 'View ↗'; post.appendChild(a); }
+            if (item.likingUsers?.length) post.appendChild(userChipsDetails(item.likingUsers, `${item.likingUsers.length} liking users`));
+            if (item.repostingUsers?.length) post.appendChild(userChipsDetails(item.repostingUsers, `${item.repostingUsers.length} reposting users`));
+            const sentiment = document.createElement('td'); sentiment.appendChild(sentimentBadge(item.level));
+            tr.append(post, sentiment, numberCell(item.likeCount), numberCell(item.replyCount), numberCell(item.repostCount), numberCell(item.quoteCount));
+            return tr;
         }
-        return conv.participants.map(p => p.name || p.id).join(', ');
+        if (platform === 'instagram') {
+            const media = document.createElement('td'); media.className = 'engagement-post'; media.textContent = item.mediaSnippet || '[Media]';
+            if (item.permalink) { const a = document.createElement('a'); a.href = item.permalink; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.textContent = ' View ↗'; media.appendChild(a); }
+            tr.append(media, textCell(item.mediaType || '—'), numberCell(item.likeCount), numberCell(item.commentsCount));
+            return tr;
+        }
+        const post = document.createElement('td'); post.className = 'engagement-post'; post.textContent = item.postSnippet || '[No post text]';
+        if (item.userReactions?.length) post.appendChild(userChipsDetails(item.userReactions, `${item.userReactions.length} visible reactors`));
+        const r = item.reactions || {};
+        tr.append(post, numberCell(r.total), numberCell(r.like), numberCell(r.love), numberCell(r.care), numberCell(r.haha), numberCell(r.wow), numberCell(r.sad), numberCell(r.angry));
+        return tr;
+    }
+
+    function userChipsDetails(users, label) {
+        const details = document.createElement('details');
+        const summary = document.createElement('summary'); summary.textContent = label; details.appendChild(summary);
+        const chips = document.createElement('div'); chips.className = 'chips';
+        users.forEach(user => { const chip = document.createElement('span'); chip.className = 'chip'; chip.textContent = user.name || (user.username ? `@${user.username}` : user.id || 'User'); chips.appendChild(chip); });
+        details.appendChild(chips);
+        return details;
+    }
+
+    function renderReviews(result) {
+        if (state.platform !== 'facebook') return;
+        const reviews = result.reviews || [];
+        $('reviewMeta').textContent = `${reviews.length} reviews · ${result.negativeReviews ?? 0} negative`;
+        $('reviewRows').replaceChildren(...reviews.map(review => {
+            const tr = document.createElement('tr');
+            const reviewer = document.createElement('td'); reviewer.appendChild(authorNode(review.reviewer));
+            const recommendation = textCell(review.recommendationType || (review.recommended ? 'positive' : '—'));
+            const text = textCell(review.reviewText || '[No written review]');
+            const rating = textCell(review.rating > 0 ? `${review.rating} / 5` : '—');
+            const sentiment = document.createElement('td'); sentiment.appendChild(sentimentBadge(review.score?.level || review.level));
+            tr.append(reviewer, recommendation, text, rating, sentiment, textCell(formatTime(review.createdTime)));
+            return tr;
+        }));
+        $('reviewTableWrap').hidden = reviews.length === 0;
+        $('reviewEmpty').hidden = reviews.length > 0;
+    }
+
+    function renderMessages(result) {
+        if (state.platform === 'x') return;
+        const conversations = result.conversations || [];
+        const summary = result.messageSummary || {};
+        $('messageMeta').textContent = `${conversations.length} conversations · ${summary.totalMessages ?? countMessages(conversations)} messages`;
+        $('messageLayout').hidden = conversations.length === 0;
+        $('messageEmpty').hidden = conversations.length > 0;
+        if (!conversations.length) return;
+        if (!state.activeConversationId || !conversations.some(c => c.id === state.activeConversationId)) state.activeConversationId = conversations[0].id;
+        $('threadList').replaceChildren(...conversations.map(c => createThread(c, conversations)));
+        renderConversation(conversations.find(c => c.id === state.activeConversationId));
+    }
+
+    function createThread(conv, conversations) {
+        const div = document.createElement('div'); div.className = `thread ${conv.id === state.activeConversationId ? 'active' : ''}`;
+        const name = document.createElement('div'); name.className = 'thread-name'; name.textContent = participantNames(conv);
+        const snippet = document.createElement('div'); snippet.className = 'thread-snippet'; snippet.textContent = lastMessageText(conv) || conv.id;
+        div.append(name, snippet);
+        div.addEventListener('click', () => { state.activeConversationId = conv.id; $('threadList').replaceChildren(...conversations.map(c => createThread(c, conversations))); renderConversation(conv); });
+        return div;
+    }
+
+    function renderConversation(conv) {
+        if (!conv) return;
+        const messages = conv.messages || [];
+        $('chat').replaceChildren(...messages.map(message => {
+            const bubble = document.createElement('div');
+            const from = message.from || {};
+            const isOwn = Boolean(message.isPageReply || message.fromPage || from.id === state.cache[state.platform]?.pageId);
+            bubble.className = `bubble ${isOwn ? 'own' : ''}`;
+            bubble.textContent = message.message || message.text || '[Attachment/message without text]';
+            const meta = document.createElement('div'); meta.className = 'bubble-meta'; meta.textContent = `${from.name || from.username || 'User'} · ${formatTime(message.createdTime || message.timestamp)}`;
+            bubble.appendChild(meta);
+            return bubble;
+        }));
+    }
+
+    function authorNode(author = {}) {
+        const wrap = document.createElement('div'); wrap.className = 'author';
+        let avatar;
+        if (author.pictureUrl || author.profileImageUrl) {
+            avatar = document.createElement('img'); avatar.className = 'avatar'; avatar.src = author.pictureUrl || author.profileImageUrl; avatar.alt = '';
+        } else {
+            avatar = document.createElement('div'); avatar.className = 'avatar-fallback'; avatar.textContent = (author.name || author.username || '?').charAt(0).toUpperCase();
+        }
+        const info = document.createElement('div');
+        const name = document.createElement('div'); name.className = 'author-name'; name.textContent = author.name || author.username || (author.id ? `User ${author.id}` : 'Anonymous');
+        const sub = document.createElement('div'); sub.className = 'author-sub'; sub.textContent = author.username ? `@${author.username}` : (author.id || '');
+        info.append(name, sub); wrap.append(avatar, info); return wrap;
+    }
+
+    function sentimentBadge(level) {
+        const span = document.createElement('span');
+        const normalized = level || 'NEUTRAL';
+        span.className = `badge badge-${levelClass(normalized)}`;
+        span.textContent = levelLabel(normalized);
+        return span;
     }
 
     function levelClass(level) {
-        if (level === 'CRITICAL_NEGATIVE') return 'critical';
-        if (level === 'WARNING_NEGATIVE') return 'warning';
         if (level === 'POSITIVE') return 'positive';
+        if (level === 'WARNING_NEGATIVE') return 'warning';
+        if (level === 'CRITICAL_NEGATIVE') return 'critical';
         return 'neutral';
     }
-
     function levelLabel(level) {
-        return level.replace('_NEGATIVE', '').replace('_', ' ');
+        if (level === 'POSITIVE') return 'Positive';
+        if (level === 'WARNING_NEGATIVE') return 'Warning';
+        if (level === 'CRITICAL_NEGATIVE') return 'Critical';
+        return 'Neutral';
     }
+    function isNegativeLevel(level) { return level === 'WARNING_NEGATIVE' || level === 'CRITICAL_NEGATIVE'; }
+    function numberCell(value) { const td = document.createElement('td'); td.className = 'engagement-number'; td.textContent = formatNumber(value ?? 0); return td; }
+    function textCell(value) { const td = document.createElement('td'); td.textContent = value ?? '—'; return td; }
+    function formatNumber(value) { return Number(value || 0).toLocaleString(); }
+    function formatPercent(value) { return `${Number(value || 0).toFixed(1)}%`; }
+    function formatTime(value) { if (!value) return '—'; const d = new Date(value); return Number.isNaN(d.getTime()) ? String(value) : d.toLocaleString(); }
+    function participantNames(conv) { return (conv.participants || []).map(p => p.name || p.username || p.id).filter(Boolean).join(', ') || 'Conversation'; }
+    function lastMessageText(conv) { const messages = conv.messages || []; const last = messages[messages.length - 1]; return last ? (last.message || last.text || '') : ''; }
+    function countMessages(conversations) { return conversations.reduce((sum, c) => sum + (c.messages?.length || 0), 0); }
+    function setLoading(loading) { $('syncButton').disabled = loading; $('syncButton').textContent = loading ? 'Syncing…' : 'Sync now'; }
+    function setConnection(kind, text) { $('connection').className = `connection ${kind || ''}`; $('connectionText').textContent = text; }
+    function showNotice(text) { $('notice').textContent = text; $('notice').classList.add('show'); }
+    function hideNotice() { $('notice').classList.remove('show'); $('notice').textContent = ''; }
 
-    function setLoading(loading) {
-        syncButton.disabled = loading;
-        syncButton.classList.toggle('loading', loading);
-        syncButton.textContent = loading ? 'Syncing…' : 'Sync now';
-    }
-
-    function setConnection(state, text) {
-        document.getElementById('connectionDot').className = `dot ${state}`;
-        document.getElementById('connectionText').textContent = text;
-    }
-
-    function setWidth(id, ratio) {
-        document.getElementById(id).style.width = `${Math.max(0, ratio * 100)}%`;
-    }
-
-    function formatTime(value) {
-        if (!value) return '—';
-        return new Intl.DateTimeFormat(undefined, {
-            dateStyle: 'medium',
-            timeStyle: 'short'
-        }).format(new Date(value));
-    }
-
-    function showNotice(message) {
-        notice.textContent = message;
-        notice.classList.add('visible');
-    }
-
-    function hideNotice() {
-        notice.classList.remove('visible');
-        notice.textContent = '';
-    }
+    switchPlatform('facebook');
 </script>
 </body>
 </html>

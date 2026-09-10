@@ -11,7 +11,7 @@ public final class XUrlBuilder {
     private static final String USER_FIELDS =
             "id,name,username,description,profile_image_url,location,verified,protected,public_metrics";
     private static final String POST_FIELDS =
-            "id,text,author_id,created_at,conversation_id,lang,public_metrics,referenced_posts";
+            "id,text,author_id,created_at,conversation_id,lang,public_metrics";
 
     private XUrlBuilder() {
     }
@@ -33,7 +33,7 @@ public final class XUrlBuilder {
                 + "?query=" + encode("conversation_id:" + conversationId)
                 + "&max_results=" + Math.max(10, config.replyLimit())
                 + "&post.fields=" + encode(POST_FIELDS)
-                + "&expansions=" + encode("author_id,referenced_posts")
+                + "&expansions=" + encode("author_id")
                 + "&user.fields=" + encode(USER_FIELDS);
     }
 

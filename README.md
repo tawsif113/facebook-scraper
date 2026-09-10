@@ -1,49 +1,38 @@
-# Social Monitor (Facebook & Instagram)
+# Social Monitor (Facebook, Instagram & X)
 
-A Java 21 social monitoring application for Facebook Pages and Instagram Professional accounts. It fetches posts, media, comments, nested replies, reactions, ratings, reviews, and direct messages through the Meta Graph API, analyzes comment and message sentiment with VADER, and presents the results in a local browser dashboard with a platform switcher.
+A Java 21 / Spring Boot social monitoring application for Facebook Pages, Instagram Professional accounts, and public X accounts. It collects posts/media, comments or replies, engagement data, reviews/messages where the platform exposes them, analyzes text with the project's local VADER implementation, and presents the results in a browser dashboard.
 
-## Features
+## Platforms
 
-- **Multi-Platform Support:** Instant switching between **Facebook** and **Instagram** on the web dashboard.
-- **Instagram Media & Comments:** Auto-resolves linked Instagram Business accounts, fetches media items (photos, carousels, reels, videos), comments, and nested replies with username details.
-- **Instagram Direct Messages:** Fetches customer direct message conversations, timestamps, sender badges, and attachments via the Instagram Messaging API.
-- **Cursor pagination:** For Facebook Page posts/reviews and Instagram media/conversations.
-- **Configurable limits:** Posts/media per page, comments per post, nested comments limit, reaction limit, and maximum pages.
-- **Detailed interaction analysis:** Commenter identity (`id`, `name`, `username`) and full nested comment reply threads with recursive sentiment analysis.
-- **Reactions & Likes:** Full 7-reaction breakdown on Facebook (`LIKE`, `LOVE`, `CARE`, `HAHA`, `WOW`, `SAD`, `ANGRY`) with reactor lists, and aggregate Like metrics on Instagram.
-- **Ratings & Reviews:** Facebook Page recommendations and customer reviews with ratings and sentiment.
-- **Local VADER sentiment analysis:** For comments, nested replies, reviews, and customer direct messages.
-- **Sync now browser UI:** At `http://localhost:8080`.
-- **Dedicated JSON data exports:**
-  - Facebook: `output/messages.json`, `output/comments.json`, `output/reviews.json`, `output/post_reactions.json`, `output/sync-result.json`
-  - Instagram: `output/instagram_messages.json`, `output/instagram_comments.json`, `output/instagram_post_reactions.json`, `output/instagram_sync-result.json`
-- **Helpful expired-token errors:** Clear diagnostics when Meta tokens expire.
+### Facebook
 
-## Meta permissions
+- Page posts and comments
+- Nested replies
+- Reaction totals and visible reactor identities
+- Reviews/ratings
+- Messenger conversations
 
-Generate a Page access token with:
+### Instagram
 
-- `pages_show_list`
-- `pages_read_engagement`
-- `pages_read_user_content`
-- `pages_messaging` (required to read Facebook Page inbox conversations)
-- `instagram_basic` (required for Instagram media and profile info)
-- `instagram_manage_comments` (required for Instagram comments and replies)
-- `instagram_manage_messages` (required for Instagram Direct Messages)
+- Professional-account media
+- Comments and nested replies
+- Like/comment counts
+- Direct messages
 
-Open the [Meta Graph API Explorer](https://developers.facebook.com/tools/explorer/), generate a User token with those permissions, then call:
+### X
 
-```text
-/me/accounts?fields=id,name,access_token,tasks
-```
+- Lookup a public account by `@username`
+- Fetch that user's recent original posts
+- Fetch recent replies to those posts and the public author attached to each returned reply
+- Fetch public post metrics: likes, replies, reposts, and quotes
+- Attempt to fetch liking-user and reposting-user identities where the X API permits the request
+- Analyze both X posts and replies with the same local VADER analyzer used by the Meta collectors
 
-Copy the Page ID and Page access token returned for the Page. Meta documents `CARE` as a supported reaction type, but some Like metrics may also include Care activity. The dashboard displays the separate CARE value returned by the reactions endpoint.
+X calls comments **replies**. Detailed reply reconstruction uses the post `conversation_id` and Recent Search, so older replies can be incomplete. The X sync response exposes warnings instead of pretending the detailed rows are complete.
 
-> **Privacy Note:** In accordance with Meta Graph API privacy guidelines (v3.0+), user identities in public interactions (reactions, comments, reviews) are represented by their public display `name` and Page-Scoped ID (`PSID` / `ASUID`). Meta does not expose email addresses or phone numbers via public Graph API interaction endpoints.
+See [`docs/X_INTEGRATION.md`](docs/X_INTEGRATION.md) for the X-specific data flow and endpoint mapping.
 
-> **Note:** If `pages_messaging` is missing on your token, the application will log a clear warning and proceed with fetching posts, comments, reactions, and reviews without failing.
-
-### Configuration
+## Configuration
 
 Copy the template:
 
@@ -51,95 +40,153 @@ Copy the template:
 cp src/main/resources/application.properties.template src/main/resources/application.properties
 ```
 
-Edit `application.properties`:
+Then configure the credentials you need locally. Never commit real tokens.
 
 ```properties
 server.port=8080
 
+# Facebook / Instagram
 fb.page-id=YOUR_FACEBOOK_PAGE_ID
 fb.access-token=YOUR_PAGE_ACCESS_TOKEN
 fb.api-version=v26.0
-
-# Posts returned by each feed request (max 100)
 fb.feed-limit=100
-
-# Top-level comments returned for each post (max 100)
 fb.comment-limit=100
-
-# Nested comment replies returned for each comment (max 100)
 fb.nested-comment-limit=100
-
-# Interacting users returned for reactions on posts and comments (max 100)
 fb.reaction-limit=100
-
-# Conversations per page (max 100)
 fb.conversation-limit=100
-
-# Messages per conversation thread (max 100)
 fb.message-limit=100
-
-# Feed/review/conversation pages to follow; use 0 for unlimited
 fb.max-pages=5
-
-# Sentiment threshold
 fb.negative-threshold=-0.05
+fb.ig-account-id=
+
+# X API v2
+x.bearer-token=YOUR_X_BEARER_TOKEN
+x.username=
+x.post-limit=10
+x.reply-limit=100
+x.engagement-user-limit=100
+x.fetch-liking-users=true
+x.fetch-reposting-users=true
 ```
 
-The application loads standard Spring Boot configuration properties and also supports environment variables or command-line overrides.
+`x.username` is optional because the X dashboard tab accepts a handle at sync time.
 
-## Run
+## Meta permissions
 
-Run directly from Gradle:
+For the Facebook/Instagram collectors, generate a Page access token with the permissions required by the features you use, including:
 
-```bash
-./gradlew bootRun
+- `pages_show_list`
+- `pages_read_engagement`
+- `pages_read_user_content`
+- `pages_messaging` for Facebook Page inbox access
+- `instagram_basic`
+- `instagram_manage_comments`
+- `instagram_manage_messages` for Instagram DMs
+
+A typical Page-token lookup is:
+
+```text
+/me/accounts?fields=id,name,access_token,tasks
 ```
 
-Or build the executable JAR and run:
+Meta may expose aggregate engagement counts while withholding some user identities depending on permissions, access level, and privacy restrictions. The application therefore treats user-identity lists as potentially partial.
 
-```bash
-./gradlew bootJar
-java -jar build/libs/facebook-scraper-1.0.0-SNAPSHOT.jar
+## X data flow
+
+```text
+Dashboard @username
+        |
+        v
+POST /api/sync?platform=x&username=<handle>
+        |
+        v
+XSyncService
+        |
+        +--> GET /2/users/by/username/{username}
+        |
+        +--> GET /2/users/{id}/tweets
+        |       exclude=replies,retweets
+        |
+        +--> GET /2/tweets/search/recent
+        |       query=conversation_id:{postId}
+        |       expansions=author_id,referenced_posts
+        |
+        +--> GET /2/tweets/{postId}/liking_users
+        |
+        +--> GET /2/tweets/{postId}/retweeted_by
+        |
+        v
+existing VaderAnalyzer
+        |
+        v
+XSyncResult + output/x/*.json + dashboard
 ```
 
-Open:
+The first X implementation intentionally does not scrape HTML. It uses the supported X API and returns whatever identities the API makes available.
+
+## API
+
+Run a platform sync:
+
+```http
+POST /api/sync?platform=facebook
+POST /api/sync?platform=instagram
+POST /api/sync?platform=x&username=XDevelopers
+```
+
+Get the latest result:
+
+```http
+GET /api/status?platform=facebook
+GET /api/status?platform=instagram
+GET /api/status?platform=x
+```
+
+## Dashboard
+
+Start the application and open:
 
 ```text
 http://localhost:8080
 ```
 
-Use a different port when needed:
+The platform switcher contains **Facebook**, **Instagram**, and **X**. Selecting X shows a username field. Enter a public handle and click **Sync now**.
 
-```bash
-./gradlew bootRun --args='--server.port=9090'
-# or with JAR:
-java -jar build/libs/facebook-scraper-1.0.0-SNAPSHOT.jar --server.port=9090
+The X views include:
+
+- **Replies:** author, reply text, VADER score/label, likes, parent-post context, timestamp
+- **Post engagement:** post text/permalink, post sentiment, like/reply/repost/quote counts, visible liking users, visible reposting users
+- **Profile summary:** account name/handle, avatar, bio, location when exposed, follower/following/post counts
+
+Facebook and Instagram retain platform-appropriate comments/engagement views; Facebook also exposes reviews and both Meta platforms can expose messages when the required permissions are available.
+
+## JSON exports
+
+Sync data is written beneath `output/`.
+
+For X:
+
+```text
+output/x/
+├── sync-result.json
+├── replies.json
+└── post-engagement.json
 ```
 
-Click **Sync now** to run the complete collection, sentiment analysis, and JSON export pipeline.
+The Meta collectors continue to write their platform-specific export files through `DataExportService`.
 
-## Dashboard organization
+## Run
 
-- **Comments:** Default view containing comment text, commenter name/ID, parent-post context, sentiment, score, timestamp, comment reaction count/reactors, and nested reply threads with author badges.
-- **Post reactions:** Post-level reaction totals, per-type breakdown, and expandable reactor list chips showing who reacted and their reaction emoji/type.
-- **Reviews:** Page recommendations/reviews with reviewer name/ID badge, ratings, and sentiment.
-- **Messages:** Messenger inbox conversations and customer chat threads:
-  - Left panel: Searchable thread list showing customer name, message count, latest message timestamp, and customer sentiment badge.
-  - Right panel: Full chat transcript with distinct customer (left) and Page (right) bubbles, VADER sentiment scores, and attachment previews (images rendered directly, downloadable files linked).
+```bash
+./gradlew bootRun
+```
 
-## JSON Data Exports
+Or:
 
-Every sync writes structured JSON files into the `output/` directory (created automatically):
-
-- `output/messages.json`: All analyzed Messenger conversations, thread sentiment summaries, customer messages, Page replies, and attachments.
-- `output/comments.json`: Analyzed post comments with author details (`from{id, name}`), nested reply threads (`replies[]`), reaction summaries, and individual reactor details (`userReactions[]`).
-- `output/reviews.json`: Page reviews and ratings with reviewer details (`reviewer{id, name}`) and sentiment labels.
-- `output/posts.json`: Page posts with reaction breakdowns and interacting reactors (`userReactions[]`).
-- `output/sync-result.json`: Full aggregate sync payload.
-
-## Pagination
-
-The first request uses `fb.feed-limit`, `fb.comment-limit`, and `fb.conversation-limit`. When Meta returns `paging.next`, the collector follows it until there is no next cursor or `fb.max-pages` is reached.
+```bash
+./gradlew bootJar
+java -jar build/libs/facebook-scraper-1.0.0-SNAPSHOT.jar
+```
 
 ## Tests
 
@@ -158,40 +205,23 @@ src/main/java/com/fbscraper/
 │   ├── GraphUrlBuilder.java
 │   ├── InstagramClient.java
 │   ├── InstagramResponseParser.java
-│   └── InstagramUrlBuilder.java
-├── config/AppConfig.java
-├── enums/SentimentLevel.java
+│   ├── InstagramUrlBuilder.java
+│   ├── XClient.java
+│   ├── XResponseParser.java
+│   └── XUrlBuilder.java
+├── config/
+│   ├── AppConfig.java
+│   └── XConfig.java
 ├── model/
-│   ├── MessageSentimentSummary.java
-│   ├── SentimentScore.java
 │   ├── facebook/
-│   │   ├── FacebookAttachment.java
-│   │   ├── FacebookComment.java
-│   │   ├── FacebookCommentAnalysis.java
-│   │   ├── FacebookConversation.java
-│   │   ├── FacebookMessage.java
-│   │   ├── FacebookPageRatingSummary.java
-│   │   ├── FacebookPost.java
-│   │   ├── FacebookPostReactionAnalysis.java
-│   │   ├── FacebookReaction.java
-│   │   ├── FacebookReactionSummary.java
-│   │   ├── FacebookReview.java
-│   │   ├── FacebookSyncResult.java
-│   │   └── FacebookUser.java
-│   └── instagram/
-│       ├── InstagramAttachment.java
-│       ├── InstagramComment.java
-│       ├── InstagramCommentAnalysis.java
-│       ├── InstagramConversation.java
-│       ├── InstagramMedia.java
-│       ├── InstagramMediaAnalysis.java
-│       ├── InstagramMessage.java
-│       ├── InstagramSyncResult.java
-│       └── InstagramUser.java
+│   ├── instagram/
+│   └── x/
 ├── sentiment/VaderAnalyzer.java
 ├── service/
 │   ├── DataExportService.java
-│   └── SentimentSyncService.java
+│   ├── SentimentSyncService.java
+│   ├── XDataExportService.java
+│   └── XSyncService.java
 └── web/SyncApiController.java
 
 src/main/resources/
@@ -199,3 +229,11 @@ src/main/resources/
 ├── vader_lexicon.txt
 └── static/index.html
 ```
+
+## Notes on platform limits
+
+- X does not have Facebook-style `LIKE/LOVE/HAHA/...` reaction categories. For X, engagement is modeled as likes, replies, reposts, and quotes.
+- The current X reply collector uses Recent Search. It is intended for recent monitoring, not historical archival of every reply ever made to an old post.
+- The current implementation requests at most 100 liking users and 100 reposting users per post. Aggregate counters may be larger than the identity lists shown.
+- Protected X accounts are not supported by this app-only public-data flow.
+- API plans, credits, rate limits, and endpoint access are controlled by Meta/X and can change independently of this codebase.

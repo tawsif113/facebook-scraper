@@ -212,14 +212,14 @@ public class XResponseParser {
     }
 
     private String findParentPostId(JsonNode node) {
-        String parent = findParentPostId(node.path("referenced_posts"));
+        String parent = findParentPostIdInReferences(node.path("referenced_posts"));
         if (!parent.isBlank()) {
             return parent;
         }
-        return findParentPostId(node.path("referenced_tweets"));
+        return findParentPostIdInReferences(node.path("referenced_tweets"));
     }
 
-    private String findParentPostId(JsonNode references) {
+    private String findParentPostIdInReferences(JsonNode references) {
         if (!references.isArray()) {
             return "";
         }

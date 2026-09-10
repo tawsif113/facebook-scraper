@@ -33,7 +33,7 @@ public final class XUrlBuilder {
                 + "?query=" + encode("conversation_id:" + conversationId)
                 + "&max_results=" + Math.max(10, config.replyLimit())
                 + "&post.fields=" + encode(POST_FIELDS)
-                + "&expansions=" + encode("author_id")
+                + "&expansions=" + encode("author_id,referenced_posts")
                 + "&user.fields=" + encode(USER_FIELDS);
     }
 

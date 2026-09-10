@@ -14,3 +14,13 @@ fb.negative-threshold=-0.05
 # Optional: explicitly specify Instagram Business Account ID.
 # If omitted or blank, the app auto-resolves it from fb.page-id.
 fb.ig-account-id=
+
+# X API v2. Never commit a real Bearer Token.
+# x.username is optional because the dashboard can supply @username at sync time.
+x.bearer-token=YOUR_X_BEARER_TOKEN
+x.username=
+x.post-limit=10
+x.reply-limit=100
+x.engagement-user-limit=100
+x.fetch-liking-users=true
+x.fetch-reposting-users=true

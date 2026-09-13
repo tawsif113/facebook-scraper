@@ -1,8 +1,9 @@
-package com.fbscraper.client;
+package com.fbscraper.client.ig;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fbscraper.client.fb.GraphResponseParser;
 import com.fbscraper.model.instagram.InstagramAttachment;
 import com.fbscraper.model.instagram.InstagramComment;
 import com.fbscraper.model.instagram.InstagramConversation;

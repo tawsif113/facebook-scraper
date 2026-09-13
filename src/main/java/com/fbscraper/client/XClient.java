@@ -81,6 +81,20 @@ public class XClient {
         return parser.parsePostsPage(response.body(), user).posts();
     }
 
+    public List<XPost> searchRecentPosts(String query) {
+        validateToken();
+        if (query == null || query.isBlank()) {
+            throw new IllegalArgumentException("Enter an X search query");
+        }
+
+        HttpResponse<String> response = sendGet(
+                XUrlBuilder.buildRecentSearchUrl(config, query),
+                Duration.ofSeconds(20)
+        );
+        ensureSuccess(response, "search recent posts");
+        return parser.parsePostsPage(response.body(), null).posts();
+    }
+
     public List<XReply> fetchReplies(String conversationId) {
         validateToken();
         HttpResponse<String> response = sendGet(XUrlBuilder.buildRepliesUrl(config, conversationId), Duration.ofSeconds(20));

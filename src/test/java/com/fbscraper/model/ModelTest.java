@@ -118,14 +118,17 @@ class ModelTest {
         assertThat(user.id()).isEqualTo("u100");
         assertThat(user.name()).isEqualTo("Alice Wonderland");
         assertThat(user.displayName()).isEqualTo("Alice Wonderland");
+        assertThat(user.profileUrl()).isEqualTo("https://www.facebook.com/u100");
 
         FacebookUser anon = new FacebookUser("", "");
         assertThat(anon.displayName()).isEqualTo("Anonymous");
         assertThat(anon.hasPicture()).isFalse();
+        assertThat(anon.profileUrl()).isNull();
 
         FacebookUser pictured = new FacebookUser("u101", "Bob Builder", null, "https://example.com/bob.jpg");
         assertThat(pictured.pictureUrl()).isEqualTo("https://example.com/bob.jpg");
         assertThat(pictured.hasPicture()).isTrue();
+        assertThat(pictured.profileUrl()).isEqualTo("https://www.facebook.com/u101");
 
         FacebookReaction reaction = new FacebookReaction("u100", "Alice Wonderland", "LOVE");
         assertThat(reaction.type()).isEqualTo("LOVE");

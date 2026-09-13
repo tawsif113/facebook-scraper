@@ -1,6 +1,6 @@
 package com.fbscraper;
 
-import com.fbscraper.client.FacebookClient;
+import com.fbscraper.client.fb.FacebookClient;
 import com.fbscraper.config.AppConfig;
 import com.fbscraper.model.facebook.FacebookComment;
 import com.fbscraper.model.facebook.FacebookConversation;

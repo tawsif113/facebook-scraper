@@ -21,6 +21,7 @@ A Java 21 / Spring Boot social monitoring application for Facebook Pages, Instag
 
 ### X
 
+- Search recent public posts by product name, phrase, hashtag, mention, and X search operators
 - Lookup a public account by `@username`
 - Fetch that user's recent original posts
 - Fetch recent replies to those posts and the public author attached to each returned reply
@@ -62,6 +63,7 @@ fb.ig-account-id=
 # X API v2
 x.bearer-token=YOUR_X_BEARER_TOKEN
 x.username=
+x.search-query=
 x.post-limit=10
 x.reply-limit=100
 x.engagement-user-limit=100
@@ -69,7 +71,11 @@ x.fetch-liking-users=true
 x.fetch-reposting-users=true
 ```
 
-`x.username` is optional because the X dashboard tab accepts a handle at sync time.
+Both values are optional because the X dashboard accepts a search query or public handle at sync time. Example query:
+
+```text
+("EBL" OR @YourXHandle OR #DontBuyEBL) -is:retweet
+```
 
 ## Meta permissions
 
@@ -94,13 +100,20 @@ Meta may expose aggregate engagement counts while withholding some user identiti
 ## X data flow
 
 ```text
-Dashboard @username
+Dashboard search query or @username
         |
         v
-POST /api/sync?platform=x&username=<handle>
+POST /api/sync?platform=x&query=<query>
+or   /api/sync?platform=x&username=<handle>
         |
         v
 XSyncService
+        |
+        +--> GET /2/tweets/search/recent
+        |       query=<brand query>
+        |       expansions=author_id,referenced_posts
+        |
+        |   OR account mode:
         |
         +--> GET /2/users/by/username/{username}
         |
@@ -132,6 +145,7 @@ Run a platform sync:
 POST /api/sync?platform=facebook
 POST /api/sync?platform=instagram
 POST /api/sync?platform=x&username=XDevelopers
+POST /api/sync?platform=x&query=(%22EBL%22%20OR%20%23DontBuyEBL)%20-is%3Aretweet
 ```
 
 Get the latest result:
@@ -150,12 +164,12 @@ Start the application and open:
 http://localhost:8080
 ```
 
-The platform switcher contains **Facebook**, **Instagram**, and **X**. Selecting X shows a username field. Enter a public handle and click **Sync now**.
+The platform switcher contains **Facebook**, **Instagram**, and **X**. Selecting X lets you choose **Brand search** or **Account posts**, enter the query or public handle, and click **Sync now**.
 
 The X views include:
 
 - **Replies:** author, reply text, VADER score/label, likes, parent-post context, timestamp
-- **Post engagement:** post text/permalink, post sentiment, like/reply/repost/quote counts, visible liking users, visible reposting users
+- **X posts:** matched post author, text/permalink, sentiment, like/reply/repost/quote counts, visible liking users, visible reposting users
 - **Profile summary:** account name/handle, avatar, bio, location when exposed, follower/following/post counts
 
 Facebook and Instagram retain platform-appropriate comments/engagement views; Facebook also exposes reviews and both Meta platforms can expose messages when the required permissions are available.

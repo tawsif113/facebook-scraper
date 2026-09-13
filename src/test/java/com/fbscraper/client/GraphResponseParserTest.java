@@ -1,5 +1,7 @@
 package com.fbscraper.client;
 
+import com.fbscraper.client.fb.FacebookClient;
+import com.fbscraper.client.fb.GraphResponseParser;
 import com.fbscraper.model.facebook.FacebookConversation;
 import com.fbscraper.model.facebook.FacebookPageRatingSummary;
 import com.fbscraper.model.facebook.FacebookPost;

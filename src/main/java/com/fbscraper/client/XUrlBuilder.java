@@ -37,6 +37,18 @@ public final class XUrlBuilder {
                 + "&user.fields=" + encode(USER_FIELDS);
     }
 
+    public static String buildRecentSearchUrl(XConfig config, String query) {
+        if (query == null || query.isBlank()) {
+            throw new IllegalArgumentException("X search query cannot be blank");
+        }
+        return BASE_URL + "/tweets/search/recent"
+                + "?query=" + encode(query.trim())
+                + "&max_results=" + Math.max(10, config.postLimit())
+                + "&post.fields=" + encode(POST_FIELDS)
+                + "&expansions=" + encode("author_id,referenced_posts")
+                + "&user.fields=" + encode(USER_FIELDS);
+    }
+
     public static String buildLikingUsersUrl(XConfig config, String postId) {
         return BASE_URL + "/tweets/" + encodePathSegment(postId) + "/liking_users"
                 + "?max_results=" + config.engagementUserLimit()

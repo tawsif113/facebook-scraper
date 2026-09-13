@@ -49,7 +49,8 @@ public class SyncApiController {
     @PostMapping("/sync")
     public ResponseEntity<?> sync(
             @RequestParam(value = "platform", defaultValue = "facebook") String platform,
-            @RequestParam(value = "username", required = false) String username
+            @RequestParam(value = "username", required = false) String username,
+            @RequestParam(value = "query", required = false) String query
     ) {
         if (!syncing.compareAndSet(false, true)) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
@@ -69,7 +70,7 @@ public class SyncApiController {
                         yield ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                                 .body(Map.of("error", "X integration is unavailable"));
                     }
-                    XSyncResult result = xSyncService.sync(username);
+                    XSyncResult result = xSyncService.sync(username, query);
                     latestXResult.set(result);
                     yield ResponseEntity.ok(result);
                 }

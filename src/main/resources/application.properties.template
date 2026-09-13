@@ -19,6 +19,9 @@ fb.ig-account-id=
 # x.username is optional because the dashboard can supply @username at sync time.
 x.bearer-token=YOUR_X_BEARER_TOKEN
 x.username=
+# Optional default Recent Search query. A query entered in the dashboard overrides this.
+# Example: ("EBL" OR @YourXHandle OR #DontBuyEBL) -is:retweet
+x.search-query=
 x.post-limit=10
 x.reply-limit=100
 x.engagement-user-limit=100

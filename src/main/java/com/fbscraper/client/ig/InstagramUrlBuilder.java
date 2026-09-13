@@ -1,4 +1,4 @@
-package com.fbscraper.client;
+package com.fbscraper.client.ig;
 
 import com.fbscraper.config.AppConfig;
 
@@ -53,6 +53,21 @@ public final class InstagramUrlBuilder {
                 "https://graph.facebook.com/%s/%s/conversations?platform=instagram&fields=%s&limit=%d",
                 config.apiVersion(),
                 igUserId,
+                URLEncoder.encode(fields, StandardCharsets.UTF_8),
+                config.conversationLimit()
+        );
+        return withAccessToken(url, config.accessToken());
+    }
+
+    public static String buildPageConversationsWithIgUrl(AppConfig config) {
+        String fields = String.format(
+                "id,updated_time,participants,messages.limit(%d){id,message,created_time,from,to,attachments{id,mime_type,name,size,file_url,image_data,video_data}}",
+                config.messageLimit()
+        );
+        String url = String.format(
+                "https://graph.facebook.com/%s/%s/conversations?platform=instagram&fields=%s&limit=%d",
+                config.apiVersion(),
+                config.pageId(),
                 URLEncoder.encode(fields, StandardCharsets.UTF_8),
                 config.conversationLimit()
         );

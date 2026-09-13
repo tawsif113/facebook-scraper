@@ -1,5 +1,6 @@
 package com.fbscraper.client;
 
+import com.fbscraper.client.ig.InstagramUrlBuilder;
 import com.fbscraper.config.AppConfig;
 import org.junit.jupiter.api.Test;
 
@@ -45,6 +46,19 @@ class InstagramUrlBuilderTest {
         assertThat(url).contains("platform=instagram");
         assertThat(url).contains("access_token=secret-token");
         assertThat(url).contains("limit=100");
+
+        String decoded = URLDecoder.decode(url, StandardCharsets.UTF_8);
+        assertThat(decoded).contains("messages.limit(100)");
+        assertThat(decoded).contains("participants");
+    }
+
+    @Test
+    void shouldBuildPageConversationsWithIgUrl() {
+        String url = InstagramUrlBuilder.buildPageConversationsWithIgUrl(config);
+
+        assertThat(url).startsWith("https://graph.facebook.com/v26.0/fb-page-123/conversations?");
+        assertThat(url).contains("platform=instagram");
+        assertThat(url).contains("access_token=secret-token");
 
         String decoded = URLDecoder.decode(url, StandardCharsets.UTF_8);
         assertThat(decoded).contains("messages.limit(100)");

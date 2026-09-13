@@ -28,6 +28,20 @@ class XUrlBuilderTest {
     }
 
     @Test
+    void shouldBuildEncodedBrandSearchWithAuthorExpansion() {
+        String url = XUrlBuilder.buildRecentSearchUrl(
+                config,
+                "(\"EBL\" OR @EBL) -is:retweet"
+        );
+
+        assertTrue(url.startsWith("https://api.x.com/2/tweets/search/recent?"));
+        assertTrue(url.contains("query=%28%22EBL%22+OR+%40EBL%29+-is%3Aretweet"));
+        assertTrue(url.contains("max_results=10"));
+        assertTrue(url.contains("expansions=author_id%2Creferenced_posts"));
+        assertTrue(url.contains("user.fields="));
+    }
+
+    @Test
     void shouldBuildEngagementIdentityEndpoints() {
         assertTrue(XUrlBuilder.buildLikingUsersUrl(config, "99").contains("/tweets/99/liking_users"));
         assertTrue(XUrlBuilder.buildRepostingUsersUrl(config, "99").contains("/tweets/99/retweeted_by"));

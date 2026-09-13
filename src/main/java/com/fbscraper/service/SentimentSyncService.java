@@ -1,7 +1,7 @@
 package com.fbscraper.service;
 
-import com.fbscraper.client.FacebookClient;
-import com.fbscraper.client.InstagramClient;
+import com.fbscraper.client.fb.FacebookClient;
+import com.fbscraper.client.ig.InstagramClient;
 import com.fbscraper.config.AppConfig;
 import com.fbscraper.enums.SentimentLevel;
 import com.fbscraper.model.MessageSentimentSummary;

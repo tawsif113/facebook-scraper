@@ -1,17 +1,25 @@
 # X API Integration
 
-This branch adds X as a third platform beside Facebook and Instagram. The goal is to inspect one public X user, fetch their recent original posts, collect reply and engagement data where the X API permits it, and run the existing local VADER analyzer over the text.
+This branch adds X as a third platform beside Facebook and Instagram. It can search recent public posts for product/brand mentions or inspect one public X account, then collect reply and engagement data where the X API permits it and run the existing local VADER analyzer over the text.
 
 ## Data flow
 
 ```text
-Dashboard: @username
+Dashboard: search query or @username
         |
         v
-POST /api/sync?platform=x&username=<handle>
+POST /api/sync?platform=x&query=<query>
+or   /api/sync?platform=x&username=<handle>
         |
         v
 XSyncService
+        |
+        +--> XClient.searchRecentPosts(query)
+        |       GET /2/tweets/search/recent
+        |       query=<brand query>
+        |       expansions=author_id,referenced_posts
+        |
+        |   OR account mode:
         |
         +--> XClient.fetchUser(handle)
         |       GET /2/users/by/username/{username}
@@ -44,6 +52,8 @@ XSyncResult -> dashboard + output/x/*.json
 
 ### Target user
 
+These fields apply in **Account posts** mode:
+
 - X user ID
 - display name
 - username
@@ -62,8 +72,9 @@ XSyncResult -> dashboard + output/x/*.json
 - public like, reply, repost and quote counts
 - permalink
 - VADER compound score and sentiment level
+- public author details returned by `expansions=author_id`
 
-The timeline request deliberately excludes replies and retweets so the dashboard starts from the selected user's own top-level posts.
+Brand search accepts X query operators, for example `("EBL" OR @YourXHandle OR #DontBuyEBL) -is:retweet`. It uses Recent Search, so results cover only the last seven days. Account mode deliberately excludes replies and retweets so the dashboard starts from the selected user's own top-level posts.
 
 ### Replies (comments)
 
@@ -89,6 +100,7 @@ Copy `src/main/resources/application.properties.template` to your local `applica
 ```properties
 x.bearer-token=YOUR_X_BEARER_TOKEN
 x.username=
+x.search-query=
 x.post-limit=10
 x.reply-limit=100
 x.engagement-user-limit=100
@@ -98,16 +110,18 @@ x.fetch-reposting-users=true
 
 Do not commit a real Bearer Token.
 
-`x.username` is optional. The X tab accepts a username at runtime, for example `XDevelopers` or `@XDevelopers`.
+`x.search-query` and `x.username` are optional defaults. The X tab accepts either value at runtime.
 
 ## Dashboard/API usage
 
-Open the dashboard, select **X**, enter a public handle, and click **Sync now**.
+Open the dashboard, select **X**, choose **Brand search** or **Account posts**, enter the value, and click **Sync now**.
 
 Equivalent request:
 
 ```http
 POST /api/sync?platform=x&username=XDevelopers
+
+POST /api/sync?platform=x&query=(%22EBL%22%20OR%20%23DontBuyEBL)%20-is%3Aretweet
 ```
 
 Latest cached/persisted X result:

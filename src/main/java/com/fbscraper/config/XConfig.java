@@ -7,18 +7,42 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
 public record XConfig(
         @DefaultValue("") String bearerToken,
         @DefaultValue("") String username,
+        @DefaultValue("") String searchQuery,
         @DefaultValue("10") int postLimit,
         @DefaultValue("100") int replyLimit,
         @DefaultValue("100") int engagementUserLimit,
         @DefaultValue("true") boolean fetchLikingUsers,
         @DefaultValue("true") boolean fetchRepostingUsers
 ) {
+    @org.springframework.boot.context.properties.bind.ConstructorBinding
     public XConfig {
         bearerToken = bearerToken == null ? "" : bearerToken.trim();
         username = normalizeUsername(username);
+        searchQuery = searchQuery == null ? "" : searchQuery.trim();
         postLimit = clamp(postLimit, 5, 100);
         replyLimit = clamp(replyLimit, 10, 100);
         engagementUserLimit = clamp(engagementUserLimit, 1, 100);
+    }
+
+    public XConfig(
+            String bearerToken,
+            String username,
+            int postLimit,
+            int replyLimit,
+            int engagementUserLimit,
+            boolean fetchLikingUsers,
+            boolean fetchRepostingUsers
+    ) {
+        this(
+                bearerToken,
+                username,
+                "",
+                postLimit,
+                replyLimit,
+                engagementUserLimit,
+                fetchLikingUsers,
+                fetchRepostingUsers
+        );
     }
 
     public boolean hasBearerToken() {
@@ -32,6 +56,11 @@ public record XConfig(
     public String resolveUsername(String override) {
         String normalized = normalizeUsername(override);
         return normalized.isBlank() ? username : normalized;
+    }
+
+    public String resolveSearchQuery(String override) {
+        String normalized = override == null ? "" : override.trim();
+        return normalized.isBlank() ? searchQuery : normalized;
     }
 
     private static String normalizeUsername(String value) {

@@ -1,5 +1,7 @@
-package com.fbscraper.client;
+package com.fbscraper.client.ig;
 
+import com.fbscraper.client.fb.FacebookClient;
+import com.fbscraper.client.fb.GraphResponseParser;
 import com.fbscraper.config.AppConfig;
 import com.fbscraper.model.instagram.InstagramConversation;
 import com.fbscraper.model.instagram.InstagramMedia;
@@ -21,33 +23,47 @@ public class InstagramClient {
     private final AppConfig config;
     private final FacebookClient.HttpSender httpSender;
     private final InstagramResponseParser parser;
+    private final InstagramProfileResolver profileResolver;
     private volatile String cachedBusinessAccountId;
 
     public InstagramClient(AppConfig config) {
-        this(config, HttpClient.newHttpClient(), new InstagramResponseParser());
+        this(config, HttpClient.newHttpClient(), new InstagramResponseParser(), new InstagramProfileResolver());
     }
 
     public InstagramClient(AppConfig config, HttpClient httpClient) {
-        this(config, request -> httpClient.send(request, HttpResponse.BodyHandlers.ofString()), new InstagramResponseParser());
+        this(config, request -> httpClient.send(request, HttpResponse.BodyHandlers.ofString()), new InstagramResponseParser(), new InstagramProfileResolver());
     }
 
     public InstagramClient(AppConfig config, FacebookClient.HttpSender httpSender) {
-        this(config, httpSender, new InstagramResponseParser());
+        this(config, httpSender, new InstagramResponseParser(), new InstagramProfileResolver());
     }
 
-    @org.springframework.beans.factory.annotation.Autowired
     public InstagramClient(AppConfig config, InstagramResponseParser parser) {
-        this(config, HttpClient.newHttpClient(), parser);
+        this(config, HttpClient.newHttpClient(), parser, new InstagramProfileResolver());
     }
 
     public InstagramClient(AppConfig config, HttpClient httpClient, InstagramResponseParser parser) {
-        this(config, request -> httpClient.send(request, HttpResponse.BodyHandlers.ofString()), parser);
+        this(config, request -> httpClient.send(request, HttpResponse.BodyHandlers.ofString()), parser, new InstagramProfileResolver());
     }
 
     public InstagramClient(AppConfig config, FacebookClient.HttpSender httpSender, InstagramResponseParser parser) {
+        this(config, httpSender, parser, new InstagramProfileResolver());
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public InstagramClient(AppConfig config, InstagramResponseParser parser, InstagramProfileResolver profileResolver) {
+        this(config, HttpClient.newHttpClient(), parser, profileResolver);
+    }
+
+    public InstagramClient(AppConfig config, HttpClient httpClient, InstagramResponseParser parser, InstagramProfileResolver profileResolver) {
+        this(config, request -> httpClient.send(request, HttpResponse.BodyHandlers.ofString()), parser, profileResolver);
+    }
+
+    public InstagramClient(AppConfig config, FacebookClient.HttpSender httpSender, InstagramResponseParser parser, InstagramProfileResolver profileResolver) {
         this.config = config;
         this.httpSender = httpSender;
         this.parser = parser;
+        this.profileResolver = profileResolver != null ? profileResolver : new InstagramProfileResolver();
     }
 
     public String resolveBusinessAccountId() {
@@ -127,7 +143,12 @@ public class InstagramClient {
             currentUrl = withAccessToken(page.nextUrl());
         }
 
-        return allMedia;
+        if (allMedia.isEmpty()) {
+            return allMedia;
+        }
+
+        System.out.printf("[InstagramClient] Resolving commenter public profile details for %d media items...%n", allMedia.size());
+        return profileResolver.resolveMediaList(allMedia);
     }
 
     public List<InstagramConversation> fetchConversations() {
@@ -146,6 +167,7 @@ public class InstagramClient {
         List<InstagramConversation> allConversations = new ArrayList<>();
         String currentUrl = InstagramUrlBuilder.buildConversationsUrl(config, igUserId);
         int pageCount = 0;
+        boolean triedFallback = false;
 
         System.out.printf(
                 "[InstagramClient] Fetching Instagram direct conversations (conversations/page=%d, messages/thread=%d)%n",
@@ -159,8 +181,18 @@ public class InstagramClient {
                 HttpResponse<String> response = sendGet(currentUrl, Duration.ofSeconds(25));
                 if (response.statusCode() != 200) {
                     String body = response.body();
+
+                    // If primary endpoint fails on first attempt, try the alternative Page endpoint with platform=instagram
+                    if (pageCount == 1 && !triedFallback) {
+                        System.out.println("[InstagramClient] Direct conversation endpoint failed [HTTP " + response.statusCode() + "]; attempting Page conversations with platform=instagram fallback...");
+                        triedFallback = true;
+                        pageCount = 0;
+                        currentUrl = InstagramUrlBuilder.buildPageConversationsWithIgUrl(config);
+                        continue;
+                    }
+
                     if (isMessagingPermissionError(body)) {
-                        System.err.println("[InstagramClient] Instagram direct messages inaccessible (missing instagram_manage_messages or pages_manage_metadata). Skipping DM extraction.");
+                        logMessagingDiagnostics(body);
                         break;
                     }
                     System.err.println("[InstagramClient] Could not fetch Instagram conversations [HTTP " + response.statusCode() + "]: " + body);
@@ -193,6 +225,35 @@ public class InstagramClient {
         return allConversations;
     }
 
+    private void logMessagingDiagnostics(String responseBody) {
+        GraphResponseParser.ApiErrorInfo error = parser.parseApiError(responseBody);
+        String msg = error.message().isBlank() ? responseBody : error.message();
+        System.err.printf("[InstagramClient] Instagram direct messages inaccessible (Code %d: %s)%n", error.code(), msg);
+        System.err.println("[InstagramClient] ─────────────────────────────────────────────────────────────────");
+        System.err.println("[InstagramClient] ACTION REQUIRED to enable Instagram Direct Messages (DMs):");
+        System.err.println("[InstagramClient] 1. Enable in Instagram App (Crucial):");
+        System.err.println("[InstagramClient]    Open the Instagram app on your mobile device, go to:");
+        System.err.println("[InstagramClient]    Settings and privacy -> Messages and story replies -> Message controls");
+        System.err.println("[InstagramClient]    Under 'Connected tools', toggle 'Allow access to messages' to ON.");
+        System.err.println("[InstagramClient] 2. Development Mode Roles (Meta App Dashboard):");
+        System.err.println("[InstagramClient]    If your Meta App is in Development mode, add your Instagram account under:");
+        System.err.println("[InstagramClient]    Meta App Dashboard -> App Roles -> Roles -> 'Instagram Testers',");
+        System.err.println("[InstagramClient]    then accept the invite in Instagram (Settings -> Apps and websites -> Tester invites).");
+        System.err.println("[InstagramClient] 3. Token Permissions:");
+        System.err.println("[InstagramClient]    Ensure the Page Access Token includes 'instagram_manage_messages'.");
+        System.err.println("[InstagramClient] ─────────────────────────────────────────────────────────────────");
+    }
+
+    private boolean isUnsupportedGetRequest(String responseBody) {
+        if (!hasText(responseBody)) {
+            return false;
+        }
+        String lower = responseBody.toLowerCase();
+        return lower.contains("unsupported get request")
+                || ((lower.contains("\"code\":100") || lower.contains("\"code\": 100"))
+                && (lower.contains("error_subcode\":33") || lower.contains("error_subcode\": 33")));
+    }
+
     private boolean isMessagingPermissionError(String responseBody) {
         if (!hasText(responseBody)) {
             return false;
@@ -200,8 +261,12 @@ public class InstagramClient {
         String lower = responseBody.toLowerCase();
         return lower.contains("instagram_manage_messages")
                 || lower.contains("pages_manage_metadata")
+                || lower.contains("pages_messaging")
                 || lower.contains("permission")
-                || lower.contains("access denied");
+                || lower.contains("access denied")
+                || lower.contains("capability")
+                || lower.contains("\"code\":3")
+                || lower.contains("\"code\": 3");
     }
 
     private HttpResponse<String> sendGet(String url, Duration timeout) {

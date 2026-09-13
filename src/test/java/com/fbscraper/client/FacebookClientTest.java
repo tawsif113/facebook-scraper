@@ -1,8 +1,8 @@
 package com.fbscraper.client;
 
+import com.fbscraper.client.fb.FacebookClient;
 import com.fbscraper.config.AppConfig;
 import com.fbscraper.model.facebook.FacebookConversation;
-import com.fbscraper.model.facebook.FacebookMessage;
 import com.fbscraper.model.facebook.FacebookPageRatingSummary;
 import com.fbscraper.model.facebook.FacebookPost;
 import com.fbscraper.model.facebook.FacebookReview;
@@ -16,7 +16,6 @@ import java.net.http.HttpHeaders;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;

@@ -47,11 +47,34 @@ public class XSyncService {
     }
 
     public XSyncResult sync(String usernameOverride) {
-        XUser targetUser = xClient.fetchUser(usernameOverride);
-        List<XPost> posts = xClient.fetchUserPosts(targetUser);
+        return sync(usernameOverride, null);
+    }
+
+    public XSyncResult sync(String usernameOverride, String queryOverride) {
+        String resolvedUsername = xConfig.resolveUsername(usernameOverride);
+        String searchQuery = queryOverride == null || queryOverride.isBlank()
+                ? (resolvedUsername.isBlank() ? xConfig.resolveSearchQuery(null) : "")
+                : xConfig.resolveSearchQuery(queryOverride);
+        boolean searchMode = !searchQuery.isBlank();
+        XUser targetUser;
+        List<XPost> posts;
+        if (searchMode) {
+            targetUser = XUser.minimal("");
+            posts = xClient.searchRecentPosts(searchQuery);
+        } else {
+            targetUser = xClient.fetchUser(resolvedUsername);
+            posts = xClient.fetchUserPosts(targetUser);
+        }
+
         List<XReplyAnalysis> analyzedReplies = new ArrayList<>();
         List<XPostAnalysis> analyzedPosts = new ArrayList<>();
         Set<String> warnings = new LinkedHashSet<>();
+        Set<String> processedConversations = new LinkedHashSet<>();
+        Set<String> analyzedReplyIds = new LinkedHashSet<>();
+
+        if (searchMode) {
+            warnings.add("Matched posts come from X Recent Search and cover only the most recent seven days.");
+        }
 
         for (XPost post : posts) {
             String snippet = createSnippet(post.text());
@@ -86,7 +109,7 @@ public class XSyncService {
                     snippet,
                     post.text(),
                     post.createdTime(),
-                    permalink(targetUser.username(), post.id()),
+                    permalink(post.author().username(), post.id()),
                     postScore.compound(),
                     postScore.level(),
                     postScore.compound() <= appConfig.negativeThreshold(),
@@ -94,11 +117,14 @@ public class XSyncService {
                     post.metrics().replyCount(),
                     post.metrics().repostCount(),
                     post.metrics().quoteCount(),
+                    post.author(),
                     likingUsers,
                     repostingUsers
             ));
 
-            if (post.metrics().replyCount() <= 0) {
+            if (post.metrics().replyCount() <= 0
+                    || !post.id().equals(post.conversationId())
+                    || !processedConversations.add(post.conversationId())) {
                 continue;
             }
 
@@ -112,6 +138,9 @@ public class XSyncService {
             try {
                 List<XReply> replies = xClient.fetchReplies(post.conversationId());
                 for (XReply reply : replies) {
+                    if (!analyzedReplyIds.add(reply.id())) {
+                        continue;
+                    }
                     SentimentScore score = analyzer.analyze(reply.text());
                     analyzedReplies.add(new XReplyAnalysis(
                             reply.id(),
@@ -147,16 +176,24 @@ public class XSyncService {
         int totalLikes = posts.stream().mapToInt(p -> p.metrics().likeCount()).sum();
         int totalReposts = posts.stream().mapToInt(p -> p.metrics().repostCount()).sum();
         int totalQuotes = posts.stream().mapToInt(p -> p.metrics().quoteCount()).sum();
+        int negativePosts = (int) analyzedPosts.stream().filter(XPostAnalysis::flagged).count();
+        double negativePostRate = analyzedPosts.isEmpty()
+                ? 0.0
+                : Math.round((negativePosts * 1000.0) / analyzedPosts.size()) / 10.0;
 
         XSyncResult result = new XSyncResult(
                 Instant.now(),
                 appConfig.negativeThreshold(),
+                searchMode ? "search" : "user",
+                searchMode ? searchQuery : "",
                 targetUser,
                 posts.size(),
                 analyzedReplies.size(),
                 totalLikes,
                 totalReposts,
                 totalQuotes,
+                negativePosts,
+                negativePostRate,
                 positive,
                 neutral,
                 warning,

@@ -1,5 +1,8 @@
 package com.fbscraper.client;
 
+import com.fbscraper.client.ig.InstagramClient;
+import com.fbscraper.client.ig.InstagramProfileResolver;
+import com.fbscraper.client.ig.InstagramResponseParser;
 import com.fbscraper.config.AppConfig;
 import com.fbscraper.model.instagram.InstagramConversation;
 import com.fbscraper.model.instagram.InstagramMedia;
@@ -141,5 +144,131 @@ class InstagramClientTest {
 
         List<InstagramConversation> convs = client.fetchConversations();
         assertThat(convs).isEmpty();
+    }
+
+    @Test
+    void shouldHandleCapabilityErrorGracefully() {
+        AppConfig config = new AppConfig("fb_page_123", "tok_valid", "v26.0", 10, 10, 10, 10, 10, 10, 2, -0.05, "178414000123");
+
+        String capabilityError = """
+                {
+                  "error": {
+                    "message": "(#3) Application does not have the capability to make this API call.",
+                    "type": "OAuthException",
+                    "code": 3
+                  }
+                }
+                """;
+
+        InstagramClient client = new InstagramClient(config, request -> new FakeResponse(400, capabilityError));
+
+        List<InstagramConversation> convs = client.fetchConversations();
+        assertThat(convs).isEmpty();
+    }
+
+    @Test
+    void shouldFallbackToPageEndpointWhenDirectConversationsReturnsUnsupported() {
+        AppConfig config = new AppConfig("fb_page_123", "tok_valid", "v26.0", 10, 10, 10, 10, 10, 10, 2, -0.05, "178414000123");
+
+        String unsupportedError = """
+                {
+                  "error": {
+                    "message": "Unsupported get request. Object with ID '178414000123' does not exist or does not support this operation.",
+                    "type": "GraphMethodException",
+                    "code": 100,
+                    "error_subcode": 33
+                  }
+                }
+                """;
+
+        String validConversationsJson = """
+                {
+                  "data": [
+                    {
+                      "id": "t_101",
+                      "updated_time": "2026-09-09T10:00:00+0000",
+                      "participants": {"data": [{"id": "user_1", "username": "jane_doe"}]},
+                      "messages": {
+                        "data": [
+                          {
+                            "id": "m_1",
+                            "message": "Hello from IG direct!",
+                            "created_time": "2026-09-09T10:00:00+0000",
+                            "from": {"id": "user_1", "username": "jane_doe"}
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+                """;
+
+        Queue<HttpResponse<String>> responses = new LinkedList<>(List.of(
+                new FakeResponse(400, unsupportedError),
+                new FakeResponse(200, validConversationsJson)
+        ));
+
+        InstagramClient client = new InstagramClient(config, request -> responses.poll());
+
+        List<InstagramConversation> convs = client.fetchConversations();
+        assertThat(convs).hasSize(1);
+        assertThat(convs.get(0).id()).isEqualTo("t_101");
+        assertThat(convs.get(0).messages()).hasSize(1);
+        assertThat(convs.get(0).messages().get(0).message()).isEqualTo("Hello from IG direct!");
+    }
+
+    @Test
+    void shouldEnrichCommentAuthorsDuringMediaFetch() {
+        AppConfig config = new AppConfig("fb_page_123", "tok_valid", "v26.0", 10, 10, 10, 10, 10, 10, 2, -0.05, "178414000123");
+
+        String mediaJson = """
+                {
+                  "data": [
+                    {
+                      "id": "media_99",
+                      "caption": "Test Post",
+                      "timestamp": "2026-09-08T12:00:00+0000",
+                      "like_count": 5,
+                      "comments": {
+                        "data": [
+                          {
+                            "id": "c_1",
+                            "text": "Hello world",
+                            "timestamp": "2026-09-08T12:30:00+0000",
+                            "username": "tawsifrahman113",
+                            "like_count": 2
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+                """;
+
+        String profileHtml = """
+                <html>
+                <head>
+                    <meta property="og:title" content="Tawsif Rahman TS (@tawsifrahman113) • Instagram photos" />
+                    <meta property="og:image" content="https://cdn.example.com/avatar.jpg" />
+                </head>
+                </html>
+                """;
+
+        InstagramProfileResolver resolver = new InstagramProfileResolver(request -> new FakeResponse(200, profileHtml));
+        InstagramClient client = new InstagramClient(
+                config,
+                request -> new FakeResponse(200, mediaJson),
+                new InstagramResponseParser(),
+                resolver
+        );
+
+        List<InstagramMedia> media = client.fetchMedia();
+        assertThat(media).hasSize(1);
+        assertThat(media.get(0).comments()).hasSize(1);
+
+        var comment = media.get(0).comments().get(0);
+        assertThat(comment.from().username()).isEqualTo("tawsifrahman113");
+        assertThat(comment.from().name()).isEqualTo("Tawsif Rahman TS");
+        assertThat(comment.from().pictureUrl()).isEqualTo("https://cdn.example.com/avatar.jpg");
     }
 }

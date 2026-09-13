@@ -1,5 +1,6 @@
 package com.fbscraper.client;
 
+import com.fbscraper.client.fb.GraphUrlBuilder;
 import com.fbscraper.config.AppConfig;
 import org.junit.jupiter.api.Test;
 

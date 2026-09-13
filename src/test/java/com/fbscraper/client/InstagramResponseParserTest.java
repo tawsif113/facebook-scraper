@@ -1,5 +1,6 @@
 package com.fbscraper.client;
 
+import com.fbscraper.client.ig.InstagramResponseParser;
 import com.fbscraper.model.instagram.InstagramComment;
 import com.fbscraper.model.instagram.InstagramConversation;
 import com.fbscraper.model.instagram.InstagramMedia;

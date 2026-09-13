@@ -1,4 +1,4 @@
-package com.fbscraper.client;
+package com.fbscraper.client.fb;
 
 import com.fbscraper.config.AppConfig;
 

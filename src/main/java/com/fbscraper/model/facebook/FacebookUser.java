@@ -37,4 +37,8 @@ public record FacebookUser(
     public String displayName() {
         return hasName() ? name : (hasId() ? "User " + id : "Anonymous");
     }
+
+    public String profileUrl() {
+        return hasId() ? "https://www.facebook.com/" + id : null;
+    }
 }
